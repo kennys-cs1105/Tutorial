@@ -127,8 +127,3 @@ nnUNetv2_extract_fingerprint
 
 ```nnUNetv2_predict -i ${nnUNet_raw}/Dataset131_WORD/ImagesTs -o output -d 131 -c 3d_fullres -f 1```
 
-
-
-
-
-
