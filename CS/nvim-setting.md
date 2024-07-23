@@ -62,4 +62,4 @@ rm ~/.config/nvim/.git
 - 删除已有文件
   - 打开vim, 输入 ```:lua= vim.fn.stdpath("data")```, -> ```/home/kennys/.local/share/nvim```
   - terminal执行 ```rm -rf /home/kennys/.local/share/nvim/lazy```
-  - git clone --filter=blob:none https://github.com/folke/lazy.nvim.git --branch=stable /home/kennys/.local/share/nvim/lazy/lazy.nvim
+  - ```git clone --filter=blob:none https://github.com/folke/lazy.nvim.git --branch=stable /home/kennys/.local/share/nvim/lazy/lazy.nvim```
