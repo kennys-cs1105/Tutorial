@@ -48,3 +48,111 @@ int main(){
 0x7ffee406582c 0x7ffee4065830 0x7ffee4065834
 
 注意：地址为16进制, 相邻元素就差了4个字节, 由于这是个int型数组, 故连续
+
+---
+
+### 2. 二分查找
+
+**问题**：给定一个n个元素的有序（升序）整型数组nums, 和一个目标值target, 写一个函数搜索nums中的target, 如果目标值存在, 则返回下标, 否则返回-1
+
+```
+示例1：
+输入： nums = [-1, 0, 3, 5, 9, 12], target = 9
+输出： 4
+```
+
+```
+示例2：
+输入： nums = [-1, 0, 3, 5, 9, 12], target = 2
+输出： -1
+```
+
+**提示**：
+- 假设nums中的元素是不重复的
+- n在[1, 10000]之间
+- nums的每个元素都在[-9999, 9999]之间
+
+**解题思路：**
+
+1. **前提是数组为有序数组, 数组中无重复元素**, 一旦有重复元素, 二分法返回的下标可能不唯一, 这些都是二分法使用的前提条件
+
+2. 二分查找涉及很多的边界条件, 需要考虑 `while(left < right)`, `while(left <= right)`, `right = middle`, `right = middle - 1`
+
+3. 区间的定义就是不变量, 在二分查找的过程中保持不变量, 在while寻找中每一次边界的处理都要坚持根据区间的定义来操作
+
+4. 二分法区间定义分为两种：左闭右闭 -> [left, right]; 左闭右开 -> [left, right)
+
+
+**两种写法**
+
+
+1. target定义在左闭右闭 -> [left, right]
+
+因为target在[left, right]区间中, 所以有如下两点：
+
+- while(left <= right), 因为left = right是有意义的
+- if(nums[middle] > target), right要赋值为middle-1, 因为当前这个nums[middle]一定不是target, 那么接下来要查找的左区间结束下标位置就是middle-1 
+
+```cpp
+class Solution{
+public:
+    int search(vector<int>& nums, int target){
+        int left = 0;
+        int right = nums.size() - 1; // [left, right]
+        while(left <= right){
+            int middle = (left + right) / 2;
+            if (nums[middle] > target){
+                right = middle - 1;
+            } else if (nums[middle] < target){
+                left = middle + 1;
+            } else {
+                return middle;
+            }
+        }
+        return -1;
+    }
+};
+```
+
+```python
+class Solution:
+    def search(self, nums:List[int], target:int) -> int:
+        left, right = 0, len(nums) - 1 
+        while(left <= right):
+            middle = (left + right) // 2
+            if (nums[middle] > target):
+                right = middle - 1
+            elif (nums[middle] < target):
+                left = middle + 1;
+            else:
+                return middle;
+        return -1
+```
+
+2. target定义在左闭右开 -> [left, right)
+
+有如下两点
+
+- while(left < right), left无法等于right
+- if (nums[middle] > target), right更新为middle, 因为当前nums[middle]不等于target, 去左区间继续寻找, 而寻找区间是左闭右开区间, 所以right更新为middle, 即：下一个查询区间不会去比较
+
+```cpp
+class Solution{
+public:
+    int search(vector<int>& nums, int target){
+        int left = 0;
+        int right = nums.size(); // [left, right)
+        while(left < right){
+            int middle = (left + right) / 2;
+            if (nums[middle] > target){
+                right = middle;
+            } else if (nums[middle] < target){
+                left = middle + 1;
+            } else {
+                return middle;
+            }
+        }
+        return -1;
+    }
+};
+```
