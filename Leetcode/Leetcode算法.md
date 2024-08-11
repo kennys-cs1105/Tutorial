@@ -156,3 +156,44 @@ public:
     }
 };
 ```
+
+
+
+### 1.3 移除元素
+
+**问题**：给你一个数组 nums 和一个值 val，你需要 原地 移除所有数值等于 val 的元素，并返回移除后数组的新长度
+
+**解题思路**：
+
+1. 数组是连续的、元素类型相同的数据结构
+
+2. 移除某一个元素，需要将其覆盖，而不是直接删除，对于最后个元素不做处理
+
+3. 类似于`vector.size`中的`erase`函数，是个O(n)操作
+
+
+**暴力解法**
+
+```cpp
+for (数组大小){
+    for (target后的元素, 向前覆盖)
+}
+```
+
+**双指针思路**
+
+- 新数组中不包含`target`
+- 同一数组构建两个指针
+    - fast: 新数组需要的元素
+    - slow: 新数组下标
+
+```cpp
+int slow = 0;
+for (int fast = 0; fast < nums.size(); fast++) {
+    if (nums[fast] != target){
+        nums[slow] = nums[fast];
+        slow++;
+    }
+}
+return slow;
+```
