@@ -197,3 +197,56 @@ for (int fast = 0; fast < nums.size(); fast++) {
 }
 return slow;
 ```
+
+
+### 1.4 有序数组的平方
+
+**问题**：给你一个按 非递减顺序 排序的整数数组 nums，返回 每个数字的平方 组成的新数组，要求也按 非递减顺序 排序
+
+**解题思路**：
+
+1. 原数组有序，从小到大，存在负数，平方后最大值只能出现在两边，不可能在中间
+
+**暴力解法**
+
+1. 数组元素平方
+2. 排序算法
+
+**双指针思路**
+
+1. 定义首尾两个指针，逐步向中间靠拢，数组的值由大到小
+
+```cpp
+vector<int> & nums; //定义原数组
+vector<int> result(nums.size(), 0); // 定义结果
+int k = nums.size() - 1;
+for (int i=0; j=nums.size()-1; i <= j){
+    if nums[i]*nums[i] > nums[j]*nums[j]{
+        result[k--] = nums[i]*nums[i];
+        i++;
+    }
+    else{
+        result[k--] = nums[j]*nums[j];
+        j--;
+    }
+}
+return result;
+```
+
+
+```python
+class Solution:
+    def sortedSquares(self, nums: List[int]) -> List[int]:
+        result = [float('inf')]*len(nums)
+        # result = list(range(len(nums)))
+        i, j, k = 0, len(nums)-1, len(nums)-1
+        while i <= j:
+            if nums[i]**2 > nums[j]**2:
+                result[k] = nums[i]**2
+                i+=1
+            else:
+                result[k] = nums[j]**2
+                j-=1
+            k-=1
+        return result
+```
