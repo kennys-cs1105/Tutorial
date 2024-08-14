@@ -250,3 +250,73 @@ class Solution:
             k-=1
         return result
 ```
+
+
+### 1.5 长度最小的数组
+
+**问题**：给定一个含有 n 个正整数的数组和一个正整数 s ，找出该数组中满足其和 ≥ s 的长度最小的 连续 子数组，并返回其长度。如果不存在符合条件的子数组，返回 0
+
+
+**暴力解法**：
+
+1. 2个for循环，一个循环起始位置，一个循环终止位置
+
+
+**滑动窗口(双指针)**
+
+1. 1个for循环做2个for循环的事情
+
+- 如果第一个for循环的j指向的是起始位置，那么另一个只能指向终止位置，那么此时和暴力解法则相似，因此j只能指向终止位置
+
+2. 实现滑动窗口
+
+- 窗口内是什么 -> 窗口内的元素和，和给定的target比较
+- 如何移动窗口的起始位置 -> 如果窗口值大于等于target，窗口就要向前移动
+- 如何移动窗口的终止位置 -> 窗口的终止位置就是遍历数组的指针
+
+**注意**：if判断一次就终止，而本题需要持续滑动窗口直到满足条件，因此使用while
+
+
+```cpp
+class Solution{
+public:
+    int minSubArrayLen(int target, vector<int>& nums){
+        int result = INT32_MAX; // cpp中的MAX
+        int sum = 0; // 窗口内元素和
+        int i = 0; // 起始位置
+        int subL = 0; // 滑窗的长度
+        for (int j = 0; j < nums.size(); j++){
+            sum += nums[j];
+            while (sum >= target){
+                subL = j - i + 1;
+                result = result < subL ? result : subL;
+                sum -= nums[i];
+                i--;
+            }
+        }
+        return result == INT32_MAX ? 0 : result;
+    }
+}
+```
+
+```python
+class Solution:
+    def minSubArrayLen(self, s: int, nums: List[int]) -> int:
+        l = len(nums)
+        left = 0
+        right = 0
+        min_len = float('inf')
+        cur_sum = 0 #当前的累加值
+        
+        while right < l:
+            cur_sum += nums[right]
+            
+            while cur_sum >= s: # 当前累加值大于目标值
+                min_len = min(min_len, right - left + 1)
+                cur_sum -= nums[left]
+                left += 1
+            
+            right += 1
+        
+        return min_len if min_len != float('inf') else 0
+```

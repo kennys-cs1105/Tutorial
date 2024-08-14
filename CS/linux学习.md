@@ -70,3 +70,31 @@
 - ls命令参数
     - 查看隐藏内容 `ls -a`
     - 查看大小 `ls -lh`
+
+
+
+---
+
+## Linux相关
+
+1. `tar cf - * | ssh -p 35394 root@region-1.autodl.com "cd /root/autodl-tmp && tar xf -"`
+
+- 这条命令用于将当前目录下的所有文件和子目录打包并通过 SSH 传输到远程服务器上，然后在远程服务器上解压缩这些文件
+
+- tar cf - *
+  - tar：tar 是一个用于归档文件的命令。
+  - c：创建一个新的归档文件。
+  - f -：指定归档文件的名字为 -，表示将归档输出到标准输出（stdout），而不是文件。
+  - *：表示当前目录下的所有文件和子目录。
+  - 这部分命令将当前目录下的所有文件和目录打包成一个归档流，并将其输出到标准输出（即将归档流传递给管道）。
+
+- |
+  - |：管道操作符，将前一个命令的标准输出作为下一个命令的标准输入。
+
+- ssh -p 35394 root@region-1.autodl.com "cd /root/autodl-tmp && tar xf -"
+  - ssh：用于通过 SSH 协议连接到远程主机。
+  - -p 35394：指定 SSH 连接使用的端口号，这里是 35394。
+  - root@region-1.autodl.com：连接到名为 region-1.autodl.com 的远程主机，并以 root 用户身份登录。
+  - "cd /root/autodl-tmp && tar xf -"：在远程主机上执行的命令。
+  - cd /root/autodl-tmp：更改当前工作目录到 /root/autodl-tmp。
+  - tar xf -：解压从标准输入（stdin）读取的归档文件。x 是解压缩的选项，f - 表示从标准输入读取归档数据。
