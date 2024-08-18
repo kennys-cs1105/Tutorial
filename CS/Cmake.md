@@ -81,3 +81,16 @@ if (USE_PQ)
     add_compile_definitions(USE_PQ)
 endif()
 ```
+
+
+
+## C/C++项目快速运行
+
+### find_package
+
+1. `find_package(LZ4 REQUIRED)`
+
+2. `find_package`从什么路径进行查找并导入
+
+3. CMakeLists.txt中使用`find_package`导入依赖库，而本地安装在新的路径下，两者如何关联
+
