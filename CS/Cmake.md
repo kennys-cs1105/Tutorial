@@ -94,3 +94,20 @@ endif()
 
 3. CMakeLists.txt中使用`find_package`导入依赖库，而本地安装在新的路径下，两者如何关联
 
+- `find_package`默认查找路径: cmake安装路径下的module -> `/usr/share/cmake-3.16/Modules`
+
+```cmake
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake;${CMAKE_MODULE_PATH}") // 当前cmake路径下的`cmake/`或者默认的`cmake/module/`
+```
+
+
+```cmake
+// FindLz4.cmake
+find_path(LZ4_INCLUDE_DIR lz4.h /opt/home/lz4/include ${CMAKE_SOURCE_DIR}/Module)
+find_library(LZ4_LIBRARY NAMES lz4 PATHS /opt/home/lz4/lib ${CMAKE_SOURCE_DIR}/Module)
+
+message(STATUS "enter cmake directory")
+if (LZ4_INCLUDE_DIR AND LZ4_LIBRARY)
+    set(LZ4_FOUND TRUE)
+endif (LZ4_INCLUDE_DIR AND LZ4_LIBRARY)
+```
