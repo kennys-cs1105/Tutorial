@@ -444,3 +444,47 @@ struct ListNode{
 |---|:---:|:---:|:---:|
 |数组|O(n)|O(1)|数据量固定、频繁查询、较少增删|
 |链表|O(1)|O(n)|数据量不固定，频繁增删、较少查询|
+
+
+#### 2.2 移除链表元素
+
+**问题**：删除链表中等于给定值 val 的所有节点。
+
+**两种方式**：
+
+- 直接使用原来链表进行删除操作
+- 设置虚拟头结点进行删除操作
+
+1. 第一种
+
+- 需要判断是否是头结点：链表其他结点都是通过前一个结点来移除当前结点，而头结点没有前一个结点
+- 移除头结点：将头结点向后移动一位
+- 手动释放移除的结点内存
+
+2. 第二种：设置虚拟头结点
+
+- 设置虚拟头结点，链表所有结点都可以按照统一的方式进行处理
+
+```cpp
+class Solution{
+public:
+    ListNode* removeElements(ListNode* head, int val){
+        ListNode* dummyHead = new ListNode(0);
+        dummyHead->next = head;
+        ListNode* cur = dummyHead;
+        while (cur->next != NULL){
+            if (cur->next>val == val){
+                ListNode* tmp = cur->next;
+                cur->next = cur->next->next;
+                delete tmp;
+            }
+            else{
+                cur = cur->next;
+            }
+        }
+        head = dummyHead->next;
+        delete dummyHead;
+        return head;
+    }
+};
+```
