@@ -108,3 +108,53 @@
 1. 能否将主动学习和半监督技术相结合
 2. 主动学习的交互方式具体是如何交互的，人为手动调整还是代码中自动进行
 3. 对于训练的开销如何
+
+## Large-Scale 3D Medical Image Pre-training with Geometric Context Priors
+
+**Contribution**
+
+1. 基于动量的师生模块的体积间对比学习（VoCo）
+2. 自监督学习结合半监督学习，有效利用标注数据和未标注数据
+3. 整合了下数据集，目前最大的数据集PreCT-160K
+
+**Towards Omni-supervised Pre-training**
+
+1. 实现
+    - 数据
+        - Labeled Segmentation $(X_{L}, Y_{L})$
+        - Unlabeled data $X_{U}$
+    - 结果：Pretrained Model $M$
+
+2. First Stage
+    - Fully supervised training $M \gets (X_{L}, Y_{L})$
+    - Self supervised training $M \gets X_{U}[L_{SSL}]$
+
+$$
+L_{SSL} = L_{pred} + L_{reg} + L_{inter} \\
+= -\frac{1}{n} \sum_{i\in n}^{n}log(1-d_{i}) + \frac{2}{n(n-1)} \sum_{i,j \in n, i \ne j}^{n} |s_{ij}| - \frac{1}{n} \sum_{i\in n}^{n} log(1-|y_{s}-y_{t}|)
+$$
+
+3. Second Stage
+    - Generate pseudo labels: $Y_{U} \gets (M, X_{U})$
+    - Semi supervised training $M \gets (X_{L}, Y_{L}, X_{U}, Y_{U})$
+    - Self supervised training $M \gets X_{U}[L_{SSL}]$
+
+**Thinking**
+
+1. 越大的模型越有效吗
+    - 论文实验表示：根据任务复杂情况，越复杂的任务（比如分割类别越多）越需要大规模的模型
+
+2. 可能有关的一些变量
+    - 用于微调的数量
+    - 数据分布的多样性
+    - 任务复杂度
+
+3. 模型的Backbone
+    - 论文认为nnunet无法修改网络（论文似乎都不会有魔改nnunet的想法？可能认为魔改之后反而会丧失性能？）
+    - 使用nnunet和swin-unetr作为backbone，研究swin-unetr
+
+4. 数据量
+    - 论文的数据集从原来的10K扩展到160K，但认为性能增强微不足道，归因于数据质量和多样性、网络可扩展性可能接近上限
+    - 也就是说，数据量只要到达一定的规模，也不需要太大，例如10K的样子，只要10K的数据中样本分布足够多样化、均衡，数据质量较高，就可以达到较好的效果
+
+5. 论文还结合了点视觉语言的部分，但跟现在的任务需求没啥关系，就不去细看了
