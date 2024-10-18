@@ -158,3 +158,32 @@ $$
     - 也就是说，数据量只要到达一定的规模，也不需要太大，例如10K的样子，只要10K的数据中样本分布足够多样化、均衡，数据质量较高，就可以达到较好的效果
 
 5. 论文还结合了点视觉语言的部分，但跟现在的任务需求没啥关系，就不去细看了
+
+## BTCV Dataset
+
+1. 50例腹部CT扫描，门静脉造影阶段拍摄
+2. 体积范围：512x512x85 - 512x512x198
+3. FOV范围：280x280x280 - 500x500x650
+4. 平面分辨率：0.54x0.54 - 0.98x0.98
+5. 层厚：2.5 - 5.0
+6. 任务：分割
+7. 模态：CT
+8. Size：Train(24 + 6) + Test(20)
+
+**标注**
+
+|器官|标注|ID|
+|:---:|:---:|:---:|
+|Spleen|spleen|1|
+|Right Kidney|rkid|2|
+|Left Kidney|lkid|3|
+|Gallbladder|gall|4|
+|Esophagus|eso|5|
+|Liver|liver|6|
+|Stomach|sto|7|
+|Aorta|aorta|8|
+|IVC|IVC|9|
+|Portal and Splenic Veins|veins|10|
+|Pancreas|pancreas|11|
+|Right adrenal gland|rad|12|
+|Left adrenal gland|lad|13|
