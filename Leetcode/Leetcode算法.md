@@ -488,3 +488,24 @@ public:
     }
 };
 ```
+
+#### 2.3 反转链表
+
+**双指针**
+
+1. 有一个指针指向头结点 `cur -> head`
+2. 定义 `pre`在`cur`前面
+3. 一直往后递归，直到`cur -> NULL`
+
+```cpp
+cur = head // 初始化
+pre = NULL // 初始化
+while (cur = NULL) // 当cur=NULL 遍历结束
+{
+    temp = cur -> next;
+    cur -> next = pre;
+    pre = cur;
+    cur = temp;
+}
+return pre;
+```
