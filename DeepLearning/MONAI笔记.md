@@ -256,6 +256,31 @@ with torch.no_grad():
 print(classification_report(y_true, y_pred, target_names=class_names, digits=4))
 ```
 
+## MONAI Model Zoo
+
+### Lung nodule ct detection
+
+1. MONAI集成的肺结节检测模型，`Lung_nodule_detection.zip`
+2. 基于LUNA16数据集以及RetinaNet模型
+    ```
+    .
+    ├── LICENSE
+    ├── configs
+    ├── datasets
+    ├── docs
+    ├── models
+    └── scripts
+    ```
+3. MONAI Bundle的命令行
+    ```bash
+    python -m monai.bundle run --config_file configs/train.json # training
+    python -m monai.bundle run --config_file configs/train.json --dataset_dir <actual dataset path> # using custom dataset
+    python -m monai.bundle run --config_file configs/inference.json # inference
+    ```
+4. 准备`custom_dataset`以及`dataset.json`
+5. trt模型暂不考虑
+
+6. 运行`inference.json`时，准备的数据应当具备`image_meta_dict`，也就是元数据；没有元数据也可以从代码中修改，自己制定`meta_dict`，有点麻烦
 
 
 ## Auto3dSeg
