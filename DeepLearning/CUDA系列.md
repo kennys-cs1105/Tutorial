@@ -195,3 +195,274 @@ $$
 
 **Note**
 1. 线程块总的大小最大为1024
+
+
+## 线程全局索引计算方式
+
+### 线程全局索引
+
+- 一共有九种索引方式
+    - 一维网格-对应一二三维线程块
+    - 二维网格-对应一二三维线程块
+    - 三维网格-对应一二三维线程块
+
+1. 一维网格 一维线程块
+    - 定义grid和block：
+        ```
+        dim3 grid_size(4);
+        dim3 block_size(8);
+        ```
+    
+    - 调用核函数
+        ```
+        kernel_fun<<<grid_size, block_size>>>(...);
+        ```
+    
+    - 计算方式
+        ```
+        int id = blockIdx.x * blockDim.x + threadIdx.x
+        ```
+
+**Note**
+- 索引类似于 `id=17=4*4+1` 
+
+2. 二维网格 二维线程块
+    - 定义grid和block：
+        ```
+        dim3 grid_size(2，2);
+        dim3 block_size(4，4);
+        ```
+    
+    - 调用核函数
+        ```
+        kernel_fun<<<grid_size, block_size>>>(...);
+        ```
+    
+    - 计算方式
+        ```
+        int blockId = blockIdx.x + blockIdx.y * gridDim.x;
+        int threadId = threadIdx.y * blockDim.x + threadIdx.x;
+        int id = blockId * (blockDim.x * blockDim.y) + threadId;
+        ```
+
+## NVCC编译流程与GPU计算能力
+
+[cuda官方文档](https://docs.nvidia.com/cuda/cuda-compiler-driver-nvcc/index.html)
+
+### NVCC编译流程
+
+1. nvcc分离全部源代码
+    - 主机代码Host：C/C++语法
+    - 设备代码Device：C/C++扩展语言
+
+2. nvcc先将设备代码编译为PTX（Parallel Thread Execution）伪汇编代码，再将PTX代码编译为二进制的cubin目标代码
+
+3. 在将源代码编译为PTX代码时，需要用选项`-arch=compute_XY`指定一个虚拟架构的计算能力，用以确定代码中能够使用的CUDA功能
+
+4. 在将PTX代码编译为cubin代码时，需要用选项`-code=sm_ZW`指定一个真实架构的计算能力，用以确定可执行文件能够使用的GPU
+
+### PTX
+
+1. PTX是CUDA平台为基于GPU的通用计算而定义的虚拟机和指令集
+
+2. nvcc编译命令总是使用两个体系结构
+    - 虚拟的中间体结构
+    - 实际的GPU体系结构
+
+3. 虚拟架构更像是对应所需的GPU功能的声明
+
+4. 虚拟架构应该尽可能选择低，适配更多实际的GPU；真实架构应该尽可能选择高，充分发挥GPU性能
+
+### GPU架构与计算能力
+
+1. GPU用于标识计算能力的版本号
+    - 形式X.Y
+    - X主版本号，Y次版本号
+
+
+## CUDA程序兼容性问题
+
+### 指定虚拟架构计算能力
+
+1. C/C++源代码编译为PTX时，可以指定虚拟架构的计算能力，用来确定代码中能够使用的CUDA功能；这一步骤与GPU硬件无关
+
+2. 编译指令，例如`nvcc helloworld.cu -o helloworld -arch=compute_61`，可执行文件`helloworld`只能在计算能力>=6.1的GPU上执行
+
+### 指定真实架构计算能力
+
+1. PTX指令转化为二进制cubin代码与具体的GPU架构有关
+
+2. 二进制cubin代码大版本之间不兼容
+3. 指定真实架构计算能力的时候必须指定虚拟架构计算能力
+4. 指定的真实架构能力必须大于或等于虚拟架构能力
+~~nvcc helloworld.cu -o helloworld -arch=compute_61 -code=sm_60~~
+5. 真实架构可以实现低小版本到高小版本的兼容
+
+### 指定多个GPU版本编译
+
+1. 使得编译出来的可执行文件可以在多GPU中执行
+
+2. 同时指定多组计算能力，编译选项`-gencode arch=compute_XY -code=sm_XY`
+    - `-gencode arch=compute_35 -code=sm_35` 开普勒架构
+    - `-gencode arch=compute_50 -code=sm_50` 麦克斯韦架构
+    - `-gencode arch=compute_60 -code=sm_60` 帕斯卡架构
+    - `-gencode arch=compute_70 -code=sm_70` 伏特架构
+3. 编译出的可执行文件包含4个二进制版本，生成的可执行文件称为胖二进制文件`fatbinary`
+4. 上述指令必须CUDA支持7.0计算能力
+
+### nvcc即时编译
+
+1. 在运行可执行文件时，从保留的PTX代码临时编译出cubin文件
+2. 两个虚拟架构计算能力必须一致，例如
+    ```
+    -gencode=arch_compute_35, code=sm_35
+    -gencode=arch_compute_50, code=sm_50
+    ```
+3. 简化`-arch=sm_XY`，等价于`-gencode=arch=compute_61,code=sm_61`
+
+### nvcc编译默认计算能力
+
+- cuda6.0之前：1.0
+- cuda6.5-8.0：2.0
+- cuda9.0-10.2：3.0
+- cuda11.6：5.2
+
+
+## CUDA矩阵加法运算程序
+
+### CUDA程序基本框架
+
+```cpp
+#include <头文件>
+
+__global__ void 函数名(param)
+{
+    kernel_func()
+}
+int main(void)
+{
+    // 1. 设置GPU设备
+    setGPU(); 
+
+    // 2.  分配主机和设备内存
+    int iElemCount = 512; // 设置元素数量
+    size_t stBytesCount = iElemCount * sizeof(float) // 字节数
+
+    // 分配主机和设备内存 初始化
+    float *fpHost_A, *fpHost_B, *fpHost_C;
+    fpHost_A = (float *)malloc(stBytesCount);
+    fpHost_B = (float *)malloc(stBytesCount);
+    fpHost_C = (float *)malloc(stBytesCount);
+    if (fpHost_A != NULL && fpHost_B != NULL && fpHost_C != NULL)
+    {
+        memset(fpHost_A, 0, stBytesCount); // 初始化0
+        memset(fpHost_B, 0, stBytesCount);
+        memset(fpHost_C, 0, stBytesCount);
+    }
+    初始化主机中的数据
+    数据从主机复制到设备
+    调用核函数在设备中计算
+    将计算得到的数据从设备传到主机
+    释放主机与设备内存
+}
+```
+
+### 设置GPU设备
+
+1. 获取GPU设备数量
+    ```cpp
+    int iDeviceCount = 0;
+    cudaGetDeviceCount(&iDeviceCount);
+    ```
+
+2. 设置GPU执行时使用的设别
+    ```cpp
+    int iDev = 0;
+    cudaSetDevice(iDev);
+    ```
+
+### 内存管理
+
+1. CUDA通过内存分配、数据传递、内存初始化、内存释放进行内存管理
+
+|STD C FUNC|CUDA C FUNC|
+|:---:|:---:|
+|malloc|cudaMalloc|
+|memcpy|cudaMemcpy|
+|memset|cudaMemset|
+|free|cudaFree|
+
+### 内存分配
+
+1. 主机分配内存 `extern void *malloc(unsigned int num_bytes)`
+    ```cpp
+    float *fpHost_A;
+    fpHost_A = (float *)malloc(nBytes);
+    ```
+2. 设备分配内存
+    ```cpp
+    float *fpDevice_A;
+    cudaMalloc((float **) & fpDevice_A, nBytes);
+    ```
+
+### 数据拷贝
+
+1. 主机数据拷贝`void * memcpy(void *dest, const void *src, size_t n)`
+    ```cpp
+    memcpy((void *)d, (void*)s, nBytes);
+    ```
+
+2. 设备数据拷贝
+    ```cpp
+    cudaMemcpy(Device_A, Host_A, nBytes, cudaMemcpyHostToHost)
+    ```
+
+**Note**
+    ```cpp
+    cudaMemcpyHostToHost // 主机 -> 主机
+    cudaMemcpyHostToDevice // 主机 -> 设备
+    cudaMemcpyDeviceToHost // 设备 -> 主机
+    cudaMemcpyDeviceToDevice // 设备 -> 设备
+
+    cudaMemcpyDefault // 默认
+    ```
+
+### 内存初始化
+
+1. 主机内存初始化`void *memset(void *str, int c, size_t n)`
+    ```cpp
+    memset(fpHost_A, 0, nBytes);
+    ```
+
+2. 设备内存初始化
+    ```cpp
+    cudaMemset(fpDevice_A, 0, nBytes);
+    ```
+
+### 内存释放
+
+1. 释放主机内存
+    ```cpp
+    free(pHost_A);
+    ```
+
+2. 释放设备内存
+    ```cpp
+    cudaFree(pDevice_A);
+    ```
+
+### 自定义设备函数
+
+1. 设备函数
+    - 定义只能执行在GPU设备上的函数
+    - 设备函数只能被核函数或其他设备函数调用
+    - 设备函数用`__device__`修饰
+
+2. 核函数kernel function
+    - 用`__global__`修饰，一般由主机调用，在设备中执行
+    - `__global__`修饰符既不能和`__host__`同时使用，也不能与`__device__`同时使用
+
+3. 主机函数
+    - 主机端的普通C++函数可用`__host__`修饰
+    - 对于主机端的函数，`__host__`修饰符可省略
+    - 可以用`__host__`和`__device__`同时修饰一个函数减少冗余代码，编译器会针对主机和设备分别编译该函数
