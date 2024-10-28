@@ -466,3 +466,155 @@ int main(void)
     - 主机端的普通C++函数可用`__host__`修饰
     - 对于主机端的函数，`__host__`修饰符可省略
     - 可以用`__host__`和`__device__`同时修饰一个函数减少冗余代码，编译器会针对主机和设备分别编译该函数
+
+    ```cpp
+    #include <stdio.h>
+    #include "./tools/common.cuh"
+
+    __global__ void addFromGPU(float *A, float *B, float *C, const int N)
+    {
+        const int bid = blockIdx.x;
+        const int tid = threadIdx.x;
+        const int id = tid + bid * blockDim.x;
+
+        C[id] = A[id] + B[id];
+
+    }
+
+    void initialData(float *addr, int elemCount)
+    {
+        for (int i = 0; i < elemCount; i++)
+        {
+            addr[i] = (float)(rand() & 0xFF) / 10.f;
+        }
+        return;
+    }
+
+    int main(void)
+    {
+        // 1、设置GPU设备
+        setGPU();
+
+        // 2、分配主机内存和设备内存，并初始化
+        int iElemCount = 512;                               // 设置元素数量
+        size_t stBytesCount = iElemCount * sizeof(float);   // 字节数
+
+        // （1）分配主机内存，并初始化
+        float *fpHost_A, *fpHost_B, *fpHost_C;
+        fpHost_A = (float *)malloc(stBytesCount);
+        fpHost_B = (float *)malloc(stBytesCount);
+        fpHost_C = (float *)malloc(stBytesCount);
+        if (fpHost_A != NULL && fpHost_B != NULL && fpHost_C != NULL)
+        {
+            memset(fpHost_A, 0, stBytesCount);  // 主机内存初始化为0
+            memset(fpHost_B, 0, stBytesCount);
+            memset(fpHost_C, 0, stBytesCount);
+        }
+        else
+        {
+            printf("Fail to allocate host memory!\n");
+            exit(-1);
+        }
+
+        // （2）分配设备内存，并初始化
+        float *fpDevice_A, *fpDevice_B, *fpDevice_C;
+        cudaMalloc((float**)&fpDevice_A, stBytesCount);
+        cudaMalloc((float**)&fpDevice_B, stBytesCount);
+        cudaMalloc((float**)&fpDevice_C, stBytesCount);
+        if (fpDevice_A != NULL && fpDevice_B != NULL && fpDevice_C != NULL)
+        {
+            cudaMemset(fpDevice_A, 0, stBytesCount);  // 设备内存初始化为0
+            cudaMemset(fpDevice_B, 0, stBytesCount);
+            cudaMemset(fpDevice_C, 0, stBytesCount);
+        }
+        else
+        {
+            printf("fail to allocate memory\n");
+            free(fpHost_A);
+            free(fpHost_B);
+            free(fpHost_C);
+            exit(-1);
+        }
+
+        // 3、初始化主机中数据
+        srand(666); // 设置随机种子
+        initialData(fpHost_A, iElemCount);
+        initialData(fpHost_B, iElemCount);
+
+        // 4、数据从主机复制到设备
+        cudaMemcpy(fpDevice_A, fpHost_A, stBytesCount, cudaMemcpyHostToDevice);
+        cudaMemcpy(fpDevice_B, fpHost_B, stBytesCount, cudaMemcpyHostToDevice);
+        cudaMemcpy(fpDevice_C, fpHost_C, stBytesCount, cudaMemcpyHostToDevice);
+
+
+        // 5、调用核函数在设备中进行计算
+        dim3 block(32); // block一般定义为32的倍数
+        dim3 grid(iElemCount / 32);
+
+        addFromGPU<<<grid, block>>>(fpDevice_A, fpDevice_B, fpDevice_C, iElemCount);    // 调用核函数
+        // cudaDeviceSynchronize();
+
+        // 6、将计算得到的数据从设备传给主机
+        cudaMemcpy(fpHost_C, fpDevice_C, stBytesCount, cudaMemcpyDeviceToHost);
+
+
+        for (int i = 0; i < 10; i++)    // 打印
+        {
+            printf("idx=%2d\tmatrix_A:%.2f\tmatrix_B:%.2f\tresult=%.2f\n", i+1, fpHost_A[i], fpHost_B[i], fpHost_C[i]);
+        }
+
+        // 7、释放主机与设备内存
+        free(fpHost_A);
+        free(fpHost_B);
+        free(fpHost_C);
+        cudaFree(fpDevice_A);
+        cudaFree(fpDevice_B);
+        cudaFree(fpDevice_C);
+
+        cudaDeviceReset();
+        return 0;
+    }
+    ```
+
+## CUDA错误检查
+
+### 运行时API错误代码
+
+1. CUDA运行时API大多支持返回错误代码，返回值类型：`cudaError_t`
+2. 运行时API成功执行，返回值为`cudaSuccess`
+3. 运行时API返回的执行状态值是枚举变量
+
+### 错误检查函数
+
+1. 获取错误代码对应名称`cudaGetErrorName`
+2. 获取错误代码描述信息`cudaGetErrorString`
+
+#### 检查函数
+
+1. 在调用CUDA运行API时，调用`ErrorCheck`函数进行包装
+2. 参数`filename`一般使用`__FILE__`，参数`lineNumber`一般使用`___LINE__`
+
+3. 错误函数返回运行API调用错误代码
+    ```cpp
+    cudaError_t ErrorCheck(cudaError_t error_code, const char* filename, int lineNumber)
+    {
+        if (error_code != cudaSuccess)
+        {
+            printf("CUDA error: \r\ncode=%d, name=%s, description=%s\r\nfile=%s, line=%d\r\n",
+            error_code, cudaGetErrorName(error_code), cudaGetErrorString(error_code), filename, lineNumber);
+            return error_code;
+        }
+        return error_code;
+    }
+    ```
+
+#### 检查核函数
+
+1. 错误检测函数问题：不能捕捉调用核函数的相关错误
+2. 捕捉调用核函数可能发生错误的方法
+    ```cpp
+    ErrorCheck(cudaGetLaskError(), __FILE__, __LINE__);
+    ErrorCheck(cudaDeviceSynchronize(), __FILE__, __LINE__);
+    ```
+
+3. 核函数定义`__global__ void kernel_function(argument arg)`
