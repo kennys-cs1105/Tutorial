@@ -263,3 +263,84 @@ print(mymodule.get_current_time())  # 同上
 ```bash
 export PYTHONPATH="${PYTHONPATH}:/path/to/your/module"
 ```
+
+### 第三方库下载和安装
+
+1. 常用pip命令
+    - `pip install name`
+    - `pip uninstall name`
+    - `pip list`
+    - `pip show name`
+    - `pip freeze`：列出当前环境下的所有第三方库，通常用于生成依赖文件
+
+2. 环境
+    - `pip freeze > requirements.txt`
+    - `pip install -r requirements.txt`
+
+
+### 编程模式
+
+**if __name__ == '__main__'**
+
+1. 这个条件语句用于判断当前模块是否作为主程序运行。如果一个.py文件被直接执行，例如通过命令行输入`python script.py`，那么该文件中的`__name__`变量将被设置`'__main__'`。相反，如果该文件是被另一个脚本导入的话，`__name__`将会是模块的名字。
+
+```python
+# 文件名：main_example.py
+def greet(name):
+    """ 打印欢迎信息 """
+    print(f"你好, {name}!")
+
+def main():
+    """ 主函数入口点 """
+    name = "山海摸鱼人"
+    greet(name)
+
+if __name__ == '__main__':
+    # 当此文件被直接运行时，执行main函数
+    main()
+```
+2. 在这个例子中，我们定义了一个 greet 函数用来打印一条问候消息，并且定义了一个`main`函数作为程序的入口点。只有当`main_example.py`被直接运行时，才会调用`main()`函数；而如果我们尝试从其他文件导入它，则不会自动执行`main()`中的代码。
+
+**应用场景**
+
+1. 提高效率
+
+- 使用`if __name__ == '__main__'`可以帮助开发者更好地组织代码，使代码更加模块化。这样做的好处之一是可以很容易地对单个组件进行测试而不必担心整个应用程序的复杂性。比如，开发一个数据分析工具，其中包含多个功能如数据清洗、统计分析等。可以把这些功能封装成不同的函数或类，然后在一个统一的`main`函数里调用它们。这样做不仅让代码更清晰易读，也方便了单元测试和维护。
+
+2. 构建可重用库
+
+- 当你想要创建一个可以被其他项目使用的Python库时，确保你的库能够在被导入时不执行任何不必要的操作是非常重要的。通过将所有初始化逻辑放在`if __name__ == '__main__'`块内，你可以保证这些逻辑只会在库作为主程序运行时才被执行。例如，考虑这样一个场景：你编写了一个处理图像的小工具，包括读取图片、调整大小等功能。为了方便其他人使用，你决定将其打包成一个库。此时，你可能希望提供一些示例代码来展示如何使用这个库。利用`if __name__ == '__main__'`结构，你可以在同一个文件中同时实现核心功能以及演示用途，而不用担心破坏了库的正常使用。
+
+```python
+# 文件名：image_tool.py
+import os
+from PIL import Image
+
+def resize_image(image_path, output_path, size=(800, 600)):
+    """ 调整图片大小并保存到指定路径 """
+    with Image.open(image_path) as img:
+        resized_img = img.resize(size)
+        resized_img.save(output_path)
+        print("图片已成功调整大小！")
+
+if __name__ == '__main__':
+    # 示例：调整一张图片的大小
+    image_dir = '原始图片'
+    output_dir = '调整后图片'
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    
+    for filename in os.listdir(image_dir):
+        if filename.endswith('.jpg'):
+            input_path = os.path.join(image_dir, filename)
+            output_path = os.path.join(output_dir, f"resized_{filename}")
+            resize_image(input_path, output_path)
+```
+
+3. 安全性
+
+- 将敏感操作限制在`if __name__ == '__main__'`内部还可以作为一种安全措施，防止某些不应该在导入时执行的操作被执行。
+
+4. 调试与测试
+
+- 对于大型项目来说，在开发过程中频繁地运行整个应用程序可能会非常耗时。通过这种方式，开发者可以直接针对特定部分进行调试或测试，从而加快开发速度。
