@@ -224,3 +224,42 @@
 1. 标识包：该目录被视作为一个包
 2. 初始化代码：__init__.py文件中编写初始化代码，例如一些特定函数、类，设置全局变量等，当包第一次被导入时，这些代码会被执行
 3. 控制导入行为：利用__init__.py文件控制包内的哪些内容对外可见
+
+### 导入模块的3种方式
+
+**基本概念**
+1. 模块：包含python定义和语句的文件
+2. 包：一个有层次结构的目录，包含`__init__.py`文件，该文件可以为空，包内可以包含其他模块或子包
+
+**示例模块**
+
+```python
+# mymodule.py
+def say_hello(name):
+    return f"你好，{name}！欢迎来到山海摸鱼人的世界。"
+
+def get_current_time():
+    from datetime import datetime
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+```
+
+1. 临时添加模块完整路径
+
+```python
+import sys
+sys.path.append('/home/yourname/Documents/PythonCode')  # 添加路径
+import mymodule
+
+print(mymodule.say_hello('小白'))  # 同上
+print(mymodule.get_current_time())  # 同上
+```
+
+2. 将模块保存到指定位置
+
+`envs/lib/pythonxx/site-packages`
+
+3. 设置环境变量，通过设置`PYTHONPATH`，可以让python自动查找并加载不在默认路径下的模块
+
+```bash
+export PYTHONPATH="${PYTHONPATH}:/path/to/your/module"
+```
