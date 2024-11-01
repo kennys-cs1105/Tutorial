@@ -344,3 +344,192 @@ if __name__ == '__main__':
 4. 调试与测试
 
 - 对于大型项目来说，在开发过程中频繁地运行整个应用程序可能会非常耗时。通过这种方式，开发者可以直接针对特定部分进行调试或测试，从而加快开发速度。
+
+## python异常处理
+
+1. 重新引发异常
+    - 如果当前层无法完全处理异常，应该在完成可能的操作后，将异常转译为更具体的、与当前层次相关的异常类型，并将其传递给上层调用者。这样可以让上层根据其上下文做出更合适的响应。
+
+2. 在合适的层级处理异常
+    - 如果当前代码块不知道如何处理某个异常，不应该捕获它。让该异常向上抛出，直到被一个知道如何处理它的层级所捕获
+    - 避免空的`except`块，因为这会导致异常被隐藏，使得调试变得困难。至少应该记录异常的信息，以便于追踪问题所在
+    - 不要仅仅打印异常信息而不做任何处理；应采取具体措施解决异常或者给出用户反馈
+
+3. 分割 try 块
+    - 将大块的`try`语句分割成多个小块，每个块只包含可能引发特定异常的代码
+    - 这样可以针对不同的异常提供更精确的处理逻辑，同时简化了对异常之间关系的分析
+
+4. 避免过于庞大的 try 块
+    - 尽量减少`try`块中的代码量，以降低异常发生的可能性，并且更容易定位和修复问题
+    - 对于可预见的情况，不要依赖异常处理机制；而是应当通过条件判断等常规手段预防错误的发生。
+
+5. 异常不应用于流程控制
+    - 异常处理机制设计初衷是为了处理非预期的错误情况，而非作为程序正常逻辑的一部分。
+    - 不要为了流程控制而故意制造异常，这样不仅降低了程序效率，还增加了代码的复杂度。
+
+6. 合适地使用异常
+    - 只有对于那些外部的、不可预知的运行时错误才应该使用异常
+    - 对于已知的、普通的错误，应该编写专门的错误处理代码，而不是简单地抛出异常
+
+7. 成功异常处理的目标
+    - 最小化代码混乱
+    - 捕获并保留有用的诊断信息
+    - 确保通知到合适的人或系统组件
+    - 采用恰当的方式结束异常活动
+    
+### assert调试程序
+
+1. 基本语法
+```python
+assert condition, message
+```
+    - `condition`：需要检查的布尔表达式
+    - `message`：断言失败时要显示的信息
+
+2. 例子
+```python
+def check_positive(num):
+    # 确保输入数字大于0
+    assert num > 0, "数值必须大于0"
+    print(f"{snum} 是正数..")
+
+# test
+check_positive(5)  # 正常输出
+# check_positive(-3)  # 解除注释后运行，将引发AssertionError
+```
+
+3. 应用场景
+
+    - 定义数据结构
+    ```python
+    books = {
+        'shu_ji_1': {'ming_cheng': '山海摸鱼人', 'zuo_zhe': '张三', 'nian_fen': 2020},
+        'shu_ji_2': {'ming_cheng': '星辰大海', 'zuo_zhe': '李四', 'nian_fen': 2022}
+    }
+    ```
+
+    - 实现
+    ```python
+    def add_book(id, info):
+        """
+        添加一本书到系统中。
+        
+        参数:
+            id (str): 书籍唯一标识符
+            info (dict): 包含书籍详细信息的字典
+        
+        返回:
+            None
+        """
+        # 检查ID是否已存在
+        assert id not in books, f"ID {id} 已经存在于系统中"
+        
+        # 检查必填项是否存在
+        required_keys = ['ming_cheng', 'zuo_zhe']
+        for key in required_keys:
+            assert key in info, f"缺少必要信息: {key}"
+        
+        # 更新全局变量books
+        books[id] = info
+        print(f"成功添加了新书: {info['ming_cheng']}")
+
+    # 测试添加书籍
+    add_book('shu_ji_3', {'ming_cheng': '未来世界', 'zuo_zhe': '王五'})
+    # add_book('shu_ji_2', {'ming_cheng': '重复测试'})  # 尝试使用已存在的ID添加，解除注释以查看效果
+    ```
+
+### 自定义异常类
+
+1. 异常处理基础
+
+```python
+# 尝试执行可能出错的代码
+try:
+    # 这里尝试除以0，会触发ZeroDivisionError
+    result = 10 / 0
+except ZeroDivisionError as e:
+    # 捕获到ZeroDivisionError时执行
+    print(f"发生错误: {e}")
+else:
+    # 如果没有异常，则执行else块
+    print(result)
+finally:
+    # 不管是否发生异常，都会执行finally块
+    print("操作完成")
+```
+
+2. 为什么需要自定义异常类
+    - 使异常具体化，更精确的描述问题所在
+
+3. 自定义异常类
+
+```python
+class ShanshuiMoyurenError(Exception):
+    """自定义异常：山海摸鱼人错误"""
+    def __init__(self, message="默认错误信息"):
+        self.message = message
+        super().__init__(self.message)
+
+# 使用示例
+try:
+    raise ShanshuiMoyurenError("发生了山海摸鱼人的特有错误！")
+except ShanshuiMoyurenError as e:
+    print(e)
+```
+
+4. try-except结构
+```python
+try:
+    a = int(input("请输入第一个整数: "))
+    b = int(input("请输入第二个整数: "))
+    result = a / b
+    print(f"{a} 除以 {b} 等于 {result}")
+except ValueError:
+    print("输入的不是整数！")
+except ZeroDivisionError:
+    print("除数不能为零！")
+except Exception as e:
+    print(f"发生了未知错误：{str(e)}")
+```
+
+5. try-except-else结构
+    - `else`中的代码只有在`try`块没有引发异常的情况下才会执行，可以用于在没有错误发生时执行额外的逻辑
+
+```python
+try:
+    a = int(input("请输入一个整数: "))
+    b = int(input("请输入另一个整数: "))
+    result = a + b
+except ValueError:
+    print("输入的不是整数！")
+else:
+    print(f"两数之和为 {result}")
+```
+
+6. try-except-finally结构
+    - `finally`块中的代码总会被执行，无论前面的`try`或`except`块是否引发了异常，通常用于释放外部资源，如关闭文件或网络连接
+
+```python
+try:
+    file = open("摸鱼.txt", "r")
+    data = file.read()
+except FileNotFoundError:
+    print("文件未找到！")
+except Exception as e:
+    print(f"发生了未知错误：{str(e)}")
+finally:
+    # 尝试关闭文件，即使在前面的代码中出现了异常
+    try:
+        file.close()
+    except:
+        pass  # 如果文件从未被打开，那么忽略这个错误
+```
+
+
+### traceback
+
+1. 异常三元素
+    - type：异常类型，引发异常的类的引用，例如`FileNotFoundError`,`TypeError`
+    - value：异常实例，详细信息
+    - traceback：追踪回溯对象，包含异常发生时的调用栈信息，可以知道异常在哪个位置发生，以及调用了什么函数
+
