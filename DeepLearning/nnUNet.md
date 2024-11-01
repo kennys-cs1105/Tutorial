@@ -412,6 +412,86 @@ if __name__ == '__main__':
     ExperimentPlannerFlare22(2, 8).plan_experiment()
 ```
 
+### 数据增强
+
+- 应对实际数据包含各种体位（俯卧、仰卧、侧卧）的问题，降低模型对体位信息的敏感度
+
+#### 离线数据增强
+
+1. 通过手动增强，进行离线数据增强
+
+    - 通过手动选取位面(axis)进行随机的旋转角度
+    - 随即进行ct值的变换(30-50HU)
+
+    ```python
+    def rotate_image(image, angle, axis, is_mask=False):
+        """
+        Rotate the image by the specified angle around the given axis.
+        Parameters:
+            image (SimpleITK.Image): The image to rotate.
+            angle (float): Angle of rotation in degrees.
+            axis (int): The axis around which to rotate (0: Sagittal, 1: Coronal).
+            is_mask (bool): If True, uses nearest neighbor interpolation (for masks).
+        Returns:
+            SimpleITK.Image: Rotated image.
+        """
+        radians = np.deg2rad(angle)
+        euler_transform = sitk.Euler3DTransform()
+        
+        # Set rotation parameters based on the axis
+        if axis == 0:  # Sagittal plane
+            euler_transform.SetRotation(radians, 0.0, 0.0)
+        elif axis == 1:  # Coronal plane
+            euler_transform.SetRotation(0.0, radians, 0.0)
+        else:
+            raise ValueError("Axis must be 0 (sagittal) or 1 (coronal)")
+        
+        # Rotate around the center of the image
+        euler_transform.SetCenter(image.TransformContinuousIndexToPhysicalPoint(
+            np.array(image.GetSize()) / 2.0))
+        
+        # Select interpolation method based on whether the image is a mask
+        interpolation = sitk.sitkNearestNeighbor if is_mask else sitk.sitkLinear
+        return sitk.Resample(image, image, euler_transform, interpolation, 0.0, image.GetPixelID())
+
+    def augment_ct_and_mask(ct_path, mask_path, fake_ct_dir, fake_mask_dir):
+        """
+        Perform augmentation by rotating in coronal and sagittal planes, and save the results.
+        Parameters:
+            ct_path (str): Path to the original CT image.
+            mask_path (str): Path to the original mask.
+            fake_ct_dir (str): Directory to save augmented CT images.
+            fake_mask_dir (str): Directory to save augmented mask images.
+        """
+        ct_image = sitk.ReadImage(ct_path)
+        mask_image = sitk.ReadImage(mask_path)
+        
+        angles = [30, 60, 180]
+        axes = [0, 1]  # 0: Sagittal, 1: Coronal
+
+        seriesuid = os.path.basename(ct_path).split('.nii.gz')[0]
+        
+        for angle in angles:
+            for axis in axes:
+                augmented_ct = rotate_image(ct_image, angle, axis, is_mask=False)
+                augmented_mask = rotate_image(mask_image, angle, axis, is_mask=True)
+                
+                # Create file names based on seriesuid, angle, and axis
+                suffix = f"{angle}_{'sagittal' if axis == 0 else 'coronal'}"
+                augmented_ct_path = os.path.join(fake_ct_dir, f"{seriesuid}.{suffix}.nii.gz")
+                augmented_mask_path = os.path.join(fake_mask_dir, f"{seriesuid}.{suffix}.nii.gz")
+                
+                # Save augmented images
+                sitk.WriteImage(augmented_ct, augmented_ct_path)
+                sitk.WriteImage(augmented_mask, augmented_mask_path)
+    ```
+
+#### 在线数据增强
+
+1. 使用nnunet自带的数据增强方式`nnUNet/nnunetv2/training/nnUNetTrainer/variants/data_augmentation`
+2. 训练过程中通过在线增强的方式进行数据增强
+3. 具体变换方法有多个trainer，大致变换方式和离线增强差不多，训练时指定`-tr name_trainer`
+
 ---
 
 ## TotalSegmentator
