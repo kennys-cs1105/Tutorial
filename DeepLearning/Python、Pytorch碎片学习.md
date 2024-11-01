@@ -533,3 +533,163 @@ finally:
     - value：异常实例，详细信息
     - traceback：追踪回溯对象，包含异常发生时的调用栈信息，可以知道异常在哪个位置发生，以及调用了什么函数
 
+
+## Cython
+
+1. C/C++与python交互
+
+### 在C++中使用python
+
+1. 如果代码简单，最简单的方式
+```cpp
+#include <Python.h>
+
+int main() {
+    Py_Initialize();
+
+    // 调用Python库中的matplotlib，绘制一幅简单的图形
+    PyRun_SimpleString("import matplotlib.pyplot as plt\n"
+                       "import numpy as np\n"
+                       "x = np.linspace(0, 10, 100)\n"
+                       "y = np.sin(x)\n"
+                       "plt.plot(x, y)\n"
+                       "plt.show()");
+
+    Py_Finalize();
+    return 0;
+}
+```
+
+- 编译运行
+```bash
+export LD_LIBRARY_PATH=/home/kennys/miniconda3/envs/torch/lib:$LD_LIBRARY_PATH
+g++ main.cpp -o main -I/home/kennys/miniconda3/envs/torch/include/python3.10 -L/home/kennys/miniconda3/envs/torch/lib -lpython3.10
+./main
+```
+
+2. 使用Cython来封装python
+    - 创建pyx文件来编写Cython代码，封装要使用的python库
+    ```python
+    # example.pyx
+
+    cdef extern from "math.h":
+        double sqrt(double x)
+
+    def c_sqrt(double x):
+        return sqrt(x)
+    ```
+
+    - 创建setup.py用于构建cython代码成为一个可被C++调用的扩展模块
+    ```python
+    # setup.py
+
+    from distutils.core import setup
+    from Cython.Build import cythonize
+
+    setup(
+        ext_modules=cythonize("example.pyx")
+    )
+    ```
+
+    - 使用命令来构建并使用cython生成的扩展模块
+    `python setup.py build_ext --inplace`
+
+3. C++中使用python库
+    - cython封装代码
+    ```python
+    # example.pyx
+
+    cdef extern from "math.h":
+        double sqrt(double x)
+
+    def c_sqrt(double x):
+        return sqrt(x)
+    ```
+
+    - 将封装代码编译成动态库
+    `cythonize -i -3 example.pyx`
+
+    - 生成一个名为`example.cpython-36m-darwin.so`的动态库，创建cpp文件调用
+    ```cpp
+    // main.cpp
+
+    #include <iostream>
+    #include <Python.h>
+
+    int main() {
+        Py_Initialize(); // 初始化Python解释器
+        PyRun_SimpleString("import sys\nsys.path.append(\"/pylib\")"); // 添加Python库所在的路径
+        PyObject* pModule = PyImport_ImportModule("example"); // 导入封装的Python库
+        if (pModule) {
+            PyObject* pFunc = PyObject_GetAttrString(pModule, "c_sqrt"); // 获取Python函数对象
+            if (pFunc && PyCallable_Check(pFunc)) {
+                PyObject* pArgs = PyTuple_Pack(1, PyFloat_FromDouble(25.0)); // 准备函数参数
+                PyObject* pValue = PyObject_CallObject(pFunc, pArgs); // 调用Python函数
+                double result = PyFloat_AsDouble(pValue); // 获取函数返回值
+                std::cout << "Square root of 25: " << result << std::endl;
+                Py_DECREF(pArgs); // 释放参数对象
+                Py_DECREF(pValue); // 释放返回值对象
+            }
+            Py_DECREF(pFunc); // 释放函数对象
+        }
+        Py_DECREF(pModule); // 释放模块对象
+        Py_Finalize(); // 释放Python解释器
+        return 0;
+    }
+    ```
+
+    - 编译
+    `g++ -o main main.cpp -I/pylib -L/pylib -lpython3.6m`
+
+4. 调用python库中的函数
+    - 定义简单函数
+    ```python
+    # example.py
+    def add(a, b):
+        return a + b
+    ```
+
+    - 创建cpp文件调用
+    ```cpp
+    // main.cpp
+
+    #include <Python.h>
+
+    int main() {
+        Py_Initialize(); // 初始化Python解释器
+
+        // 导入Python脚本
+        PyObject* pModule = PyImport_ImportModule("example");
+        if (pModule) {
+            // 获取Python函数对象
+            PyObject* pFunc = PyObject_GetAttrString(pModule, "add");
+            if (pFunc && PyCallable_Check(pFunc)) {
+                // 准备函数参数
+                PyObject* pArgs = PyTuple_Pack(2, PyLong_FromLong(3), PyLong_FromLong(4));
+                // 调用Python函数
+                PyObject* pValue = PyObject_CallObject(pFunc, pArgs);
+                // 获取函数返回值
+                long result = PyLong_AsLong(pValue);
+                // 输出返回值
+                printf("Result of add function: %ld\n", result);
+                // 释放参数对象
+                Py_DECREF(pArgs);
+                // 释放返回值对象
+                Py_DECREF(pValue);
+            }
+            // 释放函数对象
+            Py_XDECREF(pFunc);
+            // 释放模块对象
+            Py_DECREF(pModule);
+        }
+        // 释放Python解释器
+        Py_Finalize();
+
+        return 0;
+    }
+    ```
+
+    - 编译
+    `g++ -o main main.cpp -I/pylib -L/pylib -lpython3.7`
+
+
