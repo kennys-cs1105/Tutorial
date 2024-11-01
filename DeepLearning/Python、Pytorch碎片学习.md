@@ -693,3 +693,61 @@ g++ main.cpp -o main -I/home/kennys/miniconda3/envs/torch/include/python3.10 -L/
     `g++ -o main main.cpp -I/pylib -L/pylib -lpython3.7`
 
 
+## pybind11
+
+### 简单介绍
+
+1. 实现功能，导出模块
+    - 实现简单加法函数，将`add`方法放入`example`模块
+```cpp
+// src/example.cpp
+#include <pybind11/pybind11.h>
+namespace py = pybind11;
+int add(int i, int j) {    
+    return i + j;
+}
+
+PYBIND11_MODULE(example, m) {    
+    m.doc() = "pybind11 示例"; // 模块文档字符串    
+    m.def("add", &add, "一个简单的加法函数");
+}
+```
+
+2. 打包成python包
+```python
+import sys
+from pybind11 import get_cmake_dir
+from pybind11.setup_helpers import Pybind11Extension, build_ext
+from setuptools import setup
+
+__version__ = "0.0.1"
+
+ext_modules = [    
+    Pybind11Extension("example",        
+    ["src/example.cpp"],        
+    define_macros = [('VERSION_INFO', __version__)],        
+    ),
+]
+
+setup(    
+    name="example",    
+    version=__version__,    
+    author="neeky",    
+    author_email="neeky@live.com",    
+    description="A test project using pybind11",    
+    long_description="",    
+    ext_modules=ext_modules,    
+    extras_require={"test": "pytest"},    
+    cmdclass={"build_ext": build_ext},    
+    zip_safe=False,    
+    python_requires=">=3.6",    
+    install_requires=['pybind11==2.10.0']
+)
+```
+
+3. 打包安装
+```bash
+python3 setup.py sdist
+
+pip3 install dist/example-0.0.1.tar.gz
+```
