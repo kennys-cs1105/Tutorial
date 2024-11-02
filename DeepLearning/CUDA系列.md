@@ -740,3 +740,30 @@ int main(void)
     }
     ```
 
+## CUDA计时
+
+### 事件计时
+
+1. 程序执行时间计时：是CUDA程序执行性能的重要表现
+2. 使用CUDA事件（event）计时方式
+3. CUDA事件计时可为主机代码、设备代码计时
+
+### nvprof性能刨析
+
+1. nvprof是一个可执行文件
+2. 执行命令 `nvprof ./exe_name`
+
+**Note**
+1. `Warning: nvprof is not supported on devices with compute capability 8.0 and higher`：似乎是不支持高版本GPU
+
+
+## 运行时GPU信息查询
+
+### 运行时api查询GPU信息
+
+1. 调用`cudaDeviceProp prop`
+
+### 查询GPU计算核心数量
+
+1. CUDA运行时API函数无法查询GPU核心数量
+2. 根据GPU的计算能力进行查询
