@@ -1,0 +1,1 @@
+/usr/bin/g++  -g   CMakeFiles/main.dir/BuildValue.cpp.o  -o main   -L/home/kennys/miniconda3/envs/torch/lib  -Wl,-rpath,/home/kennys/miniconda3/envs/torch/lib -lpython3.10 -ldl 
