@@ -509,3 +509,31 @@ while (cur = NULL) // 当cur=NULL 遍历结束
 }
 return pre;
 ```
+
+#### 2.4 两两交换链表中的结点
+
+**问题**
+1. 两两交换分为奇数结点和偶数结点，奇数结点最后会多一个，偶数就正好
+2. cur -> 结点2，结点2 -> 结点1，结点1 -> 结点3
+3. 当前指针需要指向需要操作的两个结点的前一个结点
+
+**Code**
+1. 遍历条件
+2. 具体如何交换
+
+```cpp
+dummyHead->next = head;
+cur = dummyHead;
+// 结点奇偶数考虑cur->next  cur->next->next
+while(cur->next != NULL && cur->next->next !=NULL) // 注意空指针
+{
+    temp = cur->next; // 定义结点1
+    temp1 = cur->next->next->next; // 定义结点3
+    cur->next = cur->next->next;
+    cur->next->next = temp;
+    temp->next = temp1;
+    cur = cur->next->next;
+
+    return dummyHead->next;
+}
+```
