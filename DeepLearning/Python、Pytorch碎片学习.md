@@ -751,3 +751,67 @@ python3 setup.py sdist
 
 pip3 install dist/example-0.0.1.tar.gz
 ```
+
+
+## python函数式编程
+
+1. 纯函数
+    - 相同输入总是产生相同输出：无论何时调用纯函数，只要输入相同，输出也一定相同
+    - 没有副作用：纯函数不会修改外部状态或变量，也不会产生任何外部影响
+
+```python
+def pure_function(x):
+
+    reutrn x + y
+```
+
+2. 高阶函数
+    - 高阶函数是指可以接受函数作为参数或返回函数的函数。Python中的许多内置函数都是高阶函数，如`map`、`filter` 和 `reduce`
+
+```python
+def apply_function(func, value):
+    return func(value)
+
+def square(x):
+    return x * x
+
+result = apply_function(square, 4)
+```
+
+3. 不变性
+    - 不变性是指在函数式编程中，数据一旦创建就不可更改。这有助于避免意外的副作用和并发问题。
+
+```python
+def process_data(data):
+    new_data = [x * 2 for x in data]
+    return new_data
+
+original_data = [1, 2, 3, 4]
+processed_data = process_data(original_data)
+```
+
+4. 递归
+    - 递归是函数调用自身的过程。在函数式编程中，递归是一种常见的替代循环的方法。
+
+```python
+def factorial(n):
+    if n == 0:
+        return 1
+    else:
+        return n * factorial(n - 1)
+```
+
+5. 惰性求值
+    - 惰性求值是指在需要时才计算值，而不是立即计算。Python 中的生成器和迭代器支持惰性求值。
+
+```python
+def infinite_sequence():
+    num = 0
+    while True:
+        yield num
+        num += 1
+
+gen = infinite_sequence()
+for _ in range(5):
+    print(next(gen))
+```
