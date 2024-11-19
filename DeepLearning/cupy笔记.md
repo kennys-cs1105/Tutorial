@@ -108,3 +108,20 @@ worker_pool_global = multiprocessing.Pool(processes=48)
 
 - 每次cupy操作对应的数据都必须在同一张卡上
 - 要在一开始给cupy数据分配device，并在定义该device的语句下进行cupy操作
+
+
+## Using
+
+1. cp与np相互转换
+
+```python
+data1 = np.ndarray
+# np转换为cp
+data1_cp = cp.asarray(data1)
+
+data2 = cp.ndarray
+# cp转换为np
+data2_np = cp.asnumpy(data2)
+```
+
+2. 使用时注意并发问题，基于CUDA运算一般要指定核心，并发可能一堆bug
