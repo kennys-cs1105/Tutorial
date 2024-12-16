@@ -187,3 +187,31 @@ $$
 |Pancreas|pancreas|11|
 |Right adrenal gland|rad|12|
 |Left adrenal gland|lad|13|
+
+
+## SUES-200: A Multi-height Multi-scene Cross-view Image Benchmark Across Drone and Satellite
+
+**Contribution**
+1. 这是一篇公开数据集的论文
+    - 无人机跨视图数据集
+    - 多视图多高度多环境干扰
+2. 提出基于数据集特征的新的评估系统, 评估模型对不同高度、不确定性的鲁棒性, 以及推理速度的鲁棒性
+    - 提出一个新的指标用于评估模型对于高度的鲁棒性
+    - 提出一个新的指标用于评估模型对于不确定性的鲁棒性(外界因素, 如翻转、雨雪等)
+    - 推理速度指标
+3. 根据各种backbone(CNN & transformer)建立一个baseline模型
+    - 评估各种backbone提取特征的能力, 建立baseline
+    - 消融实验
+        - 超参`hidden_channels`的设置
+        - 是否共享backbone的权重
+        - 不同loss
+        - 距离测量算法的影响
+        - 特征融合策略
+
+
+**Background**
+1. 跨视图匹配
+    - 无人机目标定位
+    - 无人机导航
+2. 原来的数据集不够复杂, 不能应对实际场景中复杂的外部环境
+3. 另一个公共数据集paper提供数据集的同时, 也提出了baseline模型, 但不够鲁棒
