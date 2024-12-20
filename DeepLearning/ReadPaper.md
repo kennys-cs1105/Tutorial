@@ -215,3 +215,28 @@ $$
     - 无人机导航
 2. 原来的数据集不够复杂, 不能应对实际场景中复杂的外部环境
 3. 另一个公共数据集paper提供数据集的同时, 也提出了baseline模型, 但不够鲁棒
+
+
+## Multi-Stage Airway Segmentation in Lung CT Based on Multi-scale Nested Residual UNet
+
+**Contribution**
+1. 三阶段分割方法，保证精度与气道拓扑完整性，残差多尺度模块RMM
+2. 新的损失函数wBAL(加权破坏感知)，强调预测的气道中心线与gt中心线之间的重叠，有助于破碎的中心线体素分配更大的权重，迫使网络更多地关注气道连续性
+3. 
+
+
+**Background**
+1. 实现完整、连续的气道分割具有挑战性
+2. 远端气道的小尺寸和成像噪声减少了气道腔和壁之间的对比度，导致CNN传播过程中特征消失，导致分割不连续和假阴性
+3. 类不平衡，气道与背景，大气道与小气道 -> 需要专门解决气道断连的损失函数
+4. 指标不足：树长检测率(TD)，分支检测率(BD)，DSC，PRE
+
+![MNRUNet](./asserts/MNRUnet.PNG)
+
+**Method**
+1. 第一阶段：随即裁剪采样+DSC预测主气道，best_epoch作为第二阶段的base
+2. 第二阶段：hard-mining crop以及GU损失函数（通用联合损失函数）解决小气道分割
+3. 第三阶段：解决预测的不连续性，结合wBAL以及GU损失，惩罚影响气道连续性的中心线体素
+
+![模型结构](./asserts/MNRUnet结构.PNG)
+
