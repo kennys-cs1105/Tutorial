@@ -243,3 +243,25 @@ $$w_{c} = (1 - \frac{d_{i}}{d_{max}})^{2} + \alpha \dot min(1 - d_{i}, K)$$
 
 ![模型结构](./asserts/MNRUnet结构.PNG)
 
+
+## U-Mamba: Enhancing Long-range Dependency for Biomedical Image Segmentation
+
+**Contribution**
+1. 2D/3D 医学图像分割
+2. 混合CNN-SSM架构(卷积神经网络-状态空间模型), 结合局部细粒度特征以及全局依赖关系
+
+![模型结构](./asserts/U-MAMBA_arch.PNG)
+
+**Method**
+1. SSM:映射一维函数或序列, 可表示为线性常微分方程
+    - 状态方程:系统状态如何随时间变化, 包含当前状态、输入以及可能的系统参数
+    - 观测方程:系统输出如何与其状态、外部输入相关联
+$$x^{'}(t) = Ax(t) + Bu(t) \\ y(t) = Cx(t)$$
+
+2. Block构建
+    - 两个残差块(conv+in+relu) -> flatten+ln -> MAMBA块
+    - MAMBA块两个分支: (linear+conv+silu+ssm) + (linear+silu)
+
+
+**注意**
+1. SSM, 状态空间模型, 深度序列模型, 处理长序列具有强大能力
