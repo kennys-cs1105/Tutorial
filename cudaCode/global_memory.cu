@@ -2,11 +2,13 @@
 #include <iostream>
 #include "common.cuh"
 
+// 静态全局变量不能定义内函数内, 只能在外部
 __device__ int d_x = 1;
 __device__ int d_y[2];
 
 __global__ void kernel(void)
 {
+    // 全局变量可直接调用
     d_y[0] += d_x;
     d_y[1] += d_x;
 
