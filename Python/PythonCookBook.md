@@ -148,12 +148,177 @@ min_value = prices[min(prices, key=lambda k: prices[k])]
     a.items() & b.items() # { ('y', 2) }
     ```
 
+2. 同样适用于list set
+    ```python
+    list1 = list(set(a) - set(b))
+    ```
+
 **注意**
 1. 字典就是键集合和值集合的映射关系
 2. 键视图的关键特性：支持集合操作
 3. 字典的`items()`返回一个键-值对的元素视图对象，同样支持集合操作
 
 
+### 1.10 删除序列相同元素并保持顺序
+
+**思考**
+1. 删除相同元素自然而然想到集合(元素唯一性)
+
+**解决**
+1. 如果序列的值都是`hashable`, 利用集合或者生成器解决
+    ```python
+    def dedupe(items):
+        seen = set()
+        for item in items:
+            if item not in seen:
+                yield item
+            seen.add(item)
+    ```
+
+2. 如果消除元素不可哈希, 例如dict类型中的重复元素
+    - key指定了一个函数, 将序列元素转换成`hashable`
+    - 例如
+    
+    ```
+    a = [ {'x':1, 'y':2}, {'x':1, 'y':3}, {'x':1, 'y':2}, {'x':2, 'y':4}]
+    list(dedupe(a, key=lambda d: (d['x'],d['y'])))
+    ```
+
+    ```python
+    def dedupe(items, key=None):
+        seen = set()
+        for item in items:
+            val = item if key is None else key(item)
+            if item not in seen:
+                yield item
+                seen.add(item)
+    ```
+
+**注意**
+1. 如果单纯的只是为了消除重复元素, 使用集合set就可以了, 但是set无法保证元素的顺序
+
+
+### 1.11 命名切片
+
+**讨论**
+
+1. 示例代码
+    ```python
+    >>> items = [0, 1, 2, 3, 4, 5, 6]
+    >>> a = slice(2, 4)
+    >>> items[2:4]
+    [2, 3]
+    >>> items[a]
+    [2, 3]
+    >>> items[a] = [10,11]
+    >>> items
+    [0, 1, 10, 11, 4, 5, 6]
+    >>> del items[a]
+    >>> items
+    [0, 1, 4, 5, 6]
+    ```
+
+2. 使用`slice`获取更多的信息
+    ```
+    >>> a = slice(5, 50, 2)
+    >>> a.start
+    5
+    >>> a.stop
+    50
+    >>> a.step
+    2
+    >>>
+    ```
+
+3. 类似于获取指定的指针范围
+
+
+### 1.12 序列中出现次数最多的元素
+
+**解决**
+1. `collections.Counter`
+    ```python
+    words = [
+        'look', 'into', 'my', 'eyes', 'look', 'into', 'my', 'eyes',
+        'the', 'eyes', 'the', 'eyes', 'the', 'eyes', 'not', 'around', 'the',
+        'eyes', "don't", 'look', 'around', 'the', 'eyes', 'look', 'into',
+        'my', 'eyes', "you're", 'under'
+    ]
+    from collections import Counter
+    word_counts = Counter(words)
+    # 出现频率最高的3个单词
+    top_three = word_counts.most_common(3)
+    print(top_three)
+    # Outputs [('eyes', 8), ('the', 5), ('look', 4)]
+    ```
+
+**讨论**
+1. `Counter`接受任意的`hashable`元素构成的序列对象, return对象是一个字典 -> `"item": count_num`
+2. 增加计数
+    ```python
+    >>> morewords = ['why','are','you','not','looking','in','my','eyes']
+    >>> for word in morewords:
+    ... word_counts[word] += 1
+    ...
+    >>> word_counts['eyes']
+    9
+    >>>
+
+    # word_counts.update(morewords)
+    ```
+3. 可以和数学运算操作相结合
+    ```python
+    >>> a = Counter(words)
+    >>> b = Counter(morewords)
+    >>> a
+    Counter({'eyes': 8, 'the': 5, 'look': 4, 'into': 3, 'my': 3, 'around': 2,
+    "you're": 1, "don't": 1, 'under': 1, 'not': 1})
+    >>> b
+    Counter({'eyes': 1, 'looking': 1, 'are': 1, 'in': 1, 'not': 1, 'you': 1,
+    'my': 1, 'why': 1})
+    >>> # Combine counts
+    >>> c = a + b
+    >>> c
+    Counter({'eyes': 9, 'the': 5, 'look': 4, 'my': 4, 'into': 3, 'not': 2,
+    'around': 2, "you're": 1, "don't": 1, 'in': 1, 'why': 1,
+    'looking': 1, 'are': 1, 'under': 1, 'you': 1})
+    >>> # Subtract counts
+    >>> d = a - b
+    >>> d
+    Counter({'eyes': 7, 'the': 5, 'look': 4, 'into': 3, 'my': 2, 'around': 2,
+    "you're": 1, "don't": 1, 'under': 1})
+    >>>
+    ```
+
+### 1.13 通过某个关键字排序一个字典列表
+
+**解决**
+1. `operator.itemgetter`
+
+2. 根据字典的key进行排序
+    ```python
+    from operator import itemgetter
+    rows_by_fname = sorted(rows, key=itemgetter('fname'))
+    rows_by_uid = sorted(rows, key=itemgetter('uid'))
+    print(rows_by_fname)
+    print(rows_by_uid)
+    ```
+
+3. `itemgetter`支持多个keys
+    ```python
+    rows_by_lfname = sorted(rows, key=itemgetter('lname','fname'))
+    print(rows_by_lfname)
+    ```
+
+**讨论**
+1. 这个函数功能和`lambda`差不多, 但据说`itemgetter`运行快一点
+    ```python
+    rows_by_fname = sorted(rows, key=lambda r: r['fname'])
+    rows_by_lfname = sorted(rows, key=lambda r: (r['lname'],r['fname']))
+    ```
+
+
+### 1.15 通过某个字段将记录分组
 
 
 ## ch2 字符串和文本
