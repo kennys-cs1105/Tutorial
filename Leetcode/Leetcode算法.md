@@ -537,3 +537,127 @@ while(cur->next != NULL && cur->next->next !=NULL) // 注意空指针
     return dummyHead->next;
 }
 ```
+
+#### 2.5 删除链表的第n个结点
+
+**关键**
+1. 找到倒数第n个结点, 删除
+2. 对n的前一个指针进行操作, 指向n的后一个指针, 完成删除第n个
+
+**策略**
+1. 令n=2, 定义fast slow指针
+2. fast先移动n+1步
+3. fast slow再同时移动
+4. 如果fast指向最后的NULL, slow则指向n的前一个指针
+
+**Code**
+```cpp
+new Node dummy;
+fast = dummy;
+slow = dummy;
+while (n-- && fast != NULL)
+{
+    fast = fast -> next;
+}
+// 注意n是否超出链表长度
+fast = fast -> next; // fast多走一步
+while (fast != NULL)
+{
+    fast = fast -> next;
+    slow = slow -> next;
+}
+slow -> next = slow -> next -> next;
+return dummy ->next
+```
+
+#### 2.6 环形链
+
+**关键**
+1. 判断是否为环
+2. 找到环的入口
+
+**思路**
+1. 使用双指针, 快慢指针相遇即为环
+2. 定义fast = 2, slow = 1, 因此快慢一定相遇, 不会跳过
+3. 定义起点到环入口=x, 环入口到相遇点=y, 相遇点到环入口=z
+4. 存在
+
+$$
+slow = x+y \\
+fast = x+y + n(y+z) \\
+x = (y+z) - y \\ 
+x = (n-1)(y+z) + z
+$$
+
+**问题**
+1. 为什么在第一圈相遇：将环形展开后, 一定在第一圈相遇
+
+**Code**
+```cpp
+fast = head;
+slow = head;
+while (fast != NULL && fast->next != NULL)
+{
+    fast = fast->next->next;
+    slow = slow->next;
+    if (fast == slow)
+    {
+        index1 = fast;
+        index2 = head;
+        while (index1 != index2)
+        {
+            index1 = index1->next;
+            index2 = index2->next;
+        }
+        return index1;
+    }
+}
+return NULL
+```
+
+### 3. 哈希表
+
+#### 3.1 哈希表理论基础
+
+1. 数组就是一张哈希表
+
+$$
+索引： 0  1  2  3  ... \\
+元素： a  b  c  d  ...
+$$
+
+- 关键码就是索引下标, 通过下标直接访问元素
+- 一般用来快速判断一个元素是否出现在集合里
+
+2. 哈希函数
+
+- 把学生姓名映射为哈希表索引, 通过查询索引下标查询学生是否在集合里
+
+```python
+name_list = [A, B, C, ...]
+
+-> hashfunction
+index = hashfunction(name)
+hashfunction = hashcode(name) % tablesize
+
+table -> [0, tablesize - 1]
+```
+
+3. hashcode得到的数值超出了tablesize
+
+- 对数值取模, 保证得到的数值落在hashtable上
+
+4. 哈希碰撞：数量超出哈希表大小, 出现几个人同时映射在同一索引下标上
+
+- 拉链法：选择适当大小的哈希表, index1: A -> B
+- 线性探测法：保证tablesize > datasize, 依靠table的空位来解决碰撞问题
+    ```
+    index1: A (A B冲突)
+    index2：B
+    ```
+
+5. 常见的三种哈希结构
+
+- 数组
+- set
+- map
