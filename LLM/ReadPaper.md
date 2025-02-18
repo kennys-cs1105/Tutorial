@@ -37,3 +37,6 @@
     - 模型表达能力有限
 3. 函数逼近的误差
     - 模型没有训练的很好
+
+
+## 基于开源LLM实现o1-like step by step (slow thinking), ollama, streamlit
