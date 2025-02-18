@@ -285,3 +285,23 @@ $$y_{t} = Cx_{t} + v_{t}$$
     - 卡尔曼滤波, 用于线性高斯模型的估计
     - 粒子滤波, 用于非线性或非高斯状态空间模型
 4. MAMBA通过引入SSM机制, 在每个时间步通过$A_log$和$D$参数对状态进行更新, 类似于RNN
+
+
+## LViT: Language Meets Vision Transformer in Medical Image Segmentation
+
+**Contribution**
+1. 利用文本注释补偿图像数据, Language and Vision Transformer
+2. 文本信息指导半监督学习中生成质量更高的伪标签
+3. 指数伪标签迭代机制EPI, 帮助像素级注意力模块PLAM在半监督模型中保留局部图像特征
+
+![LViT工作流](./asserts/LVIT-Workflow.PNG)
+
+**Method**
+
+![LVIT模型](./asserts/LViT-Model.PNG)
+
+1. 双U结构模型
+2. 图像经过CNN提取特征, 文本只经过简单的向量化处理
+3. VIT用于合并图像和文本信息, 拼接的特征进行VIT分支的下采样提取多模态特征
+4. 将VIT分支上采样的特征提交给CNN分支的上采样, 并经过注意力计算(跳跃连接), 预测掩码
+5. PLAM模块用于补偿自注意力对局部特征的缺乏关注
