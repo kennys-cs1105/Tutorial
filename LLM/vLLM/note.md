@@ -19,3 +19,23 @@
 - Model executor (Model runner)
 - Modelling (Other models -> vLLM)
 - Attention backend -> flash attention
+
+## 分布式
+
+1. 因为一卡放不下, 所以需要多卡。
+2. 更高的利用硬件资源
+
+### Feature
+
+*Distributed inference*
+
+    - Why distributed inference
+        - Communication device:
+            - nvlink
+            - infinity band
+            - rdma
+        - Communication library: `vllm/distributed/device_communicators`
+            - `PyNccl`
+            - `shared memory`: os
+            - `custom allreduce`: A kernel just for all reduce operation
+            - `torch.distributed`
