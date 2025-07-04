@@ -349,3 +349,45 @@ transforms = Compose([LoadImaged(),
 1. CacheDataset每次构建都需要重新缓存一次，如果后续的代码崩了，则需要每次都浪费时间
 
 2. PersistentDataset构建一个cache_dir用于存储数据，以便后续重复使用
+
+
+### 数据载入和预处理
+
+1. MONAI只处理nifti数据，其余格式需要转换
+2. transform里的重采样间隔默认为(1.5,1.5,2)，但需要注意和nifti数据的xyz是否对上，需要检查
+3. ScaleIntensityRanged，限制CT的HU值，并归一化到0-1，例如因为脾脏的HU值在(50,70)之间，所以(-57,164)以外的HU值就不考虑了
+4. CropForegroundd功能慎用，它直接把你CT的空白部分去掉了，造成CT的size变化。如果你想让分割的结果再重叠到原CT，这个功能就禁用了
+5. 注意train_transforms 和val_transforms 的超参数要一致
+6. 不要一次性载入太多数据train_loader到你的GPU，进程会被killed
+
+
+### 数据集加载器
+
+1. 常规Dataset
+```
+data_dir = ""
+tranforms = Compose([...])
+dataset = Dataset(data_dir, transforms)
+sample = dataset[index]
+```
+
+2. CacheDataset: 预加载所有原始数据。将non-random-transform应用到数据并提前缓存，提高加载速度。如果数据集数量不是特别大，能够全部缓存到内存中，这是性能最高的Dataset。
+```
+transforms = Compose([...])
+dataset = CacheDataset(data=train_dict, trainsforms, cache_rate=1.0,num_workers=4, progress=True)
+```
+- cache_rate: 缓存的百分比
+- cache_num: 要缓存的项目数量
+- num_workers: 线程数量
+- progress: 进度条
+
+3. PersistentDataset: 用于处理大型数据集。将数据应用non-random-transform，缓存在硬盘中。
+```
+transforms = Compose([...])
+dataset = PersistentDataset(data=train_dict, transforms, cache_dir="./data/cache")
+dataloader = DataLoader(dataset, batch_size=1, num_workers=8, pin_memory=torch.cuda.is_available())
+```
+- cache_dir: 数据加载到dataloader后，路径内不会有数据。当调用dataloader时才会有数据。
+```
+data = iter(dataloader).next()
+```
