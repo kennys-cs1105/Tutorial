@@ -33,6 +33,7 @@
 4. CropForegroundd功能慎用，它直接把你CT的空白部分去掉了，造成CT的size变化。如果你想让分割的结果再重叠到原CT，这个功能就禁用了
 5. 注意train_transforms 和val_transforms 的超参数要一致
 6. 不要一次性载入太多数据train_loader到你的GPU，进程会被killed
+7. CropForegroundd和RandCropByPosNegLabeld组合，CropForegroundd会把空白区域裁掉，例如原size为(128,128,128), 裁切后为(110,120,100), 然后RandCropByPosNegLabeld会在这个尺寸上去ROI尺寸例如(96,96,96)进行patch裁切，需要注意裁切后的尺寸和ROI尺寸不要发生冲突。发生冲突也可以通过两种方式补救：首先可以在transform的最后补充ResizeWithPadOrCropd(keys=["image", "label"], spatial_size=(128, 128, 128))。或者在dataloader中提供安全的collate函数collate_fn=pad_list_data_collate
 
 
 ### MONAI transforms
