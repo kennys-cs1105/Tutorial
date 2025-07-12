@@ -342,3 +342,108 @@
 2. 训练时如果loss出现NaN，可能是开启半精度的问题，也可能是所加模块不适用的问题
     - self.amp = False
   
+
+## YOLO部署
+
+- 部署时，为了提高效率，通常不直接使用训练生成的pt模型，而是把pt模型转化为可以通过tensorrt加速推理的engin文件
+- yolo模型转化为tensorrt模型
+- yolo模型转化为onnx模型
+
+### 环境
+
+- python==3.10
+- torch==2.1.1
+- cuda==11.8
+- cudnn==8.9.3
+- TensorRT==8.6.0.12
+
+1. cuda安装
+```
+wget https://developer.download.nvidia.com/compute/cuda/11.1.1/local_installers/cuda_11.1.1_455.32.00_linux.run
+sudo sh cuda_11.1.1_455.32.00_linux.run
+```
+
+2. cudnn
+```
+sudo cp cuda/include/cudnn.h /usr/local/cuda-10.1/include # 修改路径
+sudo cp cuda/lib64/libcudnn* /usr/local/cuda-10.1/lib64
+sudo chmod a+r /usr/local/cuda-10.1/include/cudnn.h 
+sudo chmod a+r /usr/local/cuda-10.1/lib64/libcudnn*
+
+# 查看版本
+cat /usr/local/cuda/include/cudnn.h | grep CUDNN_MAJOR -A 2
+cat /usr/local/cuda/include/cudnn_version.h | grep CUDNN_MAJOR -A 2
+```
+
+3. tensorrt安装
+```
+# tensorrt匹配cuda cudnn版本
+export PATH=/home/hk/Package/TensorRT-8.6.1.6/bin:$PATH
+export LD_LIBRARY_PATH=/home/hk/Package/TensorRT-8.6.1.6/lib:$LD_LIBRARY_PATH
+export LIBRARY_PATH=/home/hk/Package/TensorRT-8.6.1.6/lib:$LIBRARY_PATH
+```
+
+4. python安装
+```
+cd python
+pip install tensorrt-py38...
+```
+
+### 代码
+
+1. 以yolov8为例
+    - [yolov8仓库](https://github.com/ultralytics/ultralytics)
+    - [tensorrt](https://github.com/wang-xinyu/tensorrtx)
+
+2. 构建
+    - 生成wts文件
+        - 修改`yolov8/gen_wts.py`中的模型路径
+        - 生成`python3 gen_wts.py -w weight/yolov8n.pt -o weight/yolov8n.wts -t detect`
+    - Build
+        - 如果自己训练yolo，则可能需要修改yololayer.h中的超参，例如CLASS_NUM等
+        - `yolov8.cpp`中调整`batch_size`
+        - 构建
+        ```
+        mkdir build && cd build
+        cp {yolov8}/weight/yolov8n.wts ./
+        cmake ..
+        make
+        ```
+        - 生成engine文件
+            - 生成：`./yolov8_det -s yolov8n.wts yolov8n.engine n`
+            - 推理：`./yolov8_det -d yolov8n.engine images/data g`
+
+### 记录
+
+1. 测试trt python安装报错`libnvinfer.so.8: cannot open shared object file: No such file or directory`
+
+- 找不到tensorRT lib路径，需要修改`/etc/ld.so.conf`
+```
+sudo gedit /etc/ld.so.conf
+# 添加 TensorRT lib 路径
+/PATH/TO/TensorRT-7.1.3.4/lib
+# 更新配置
+sudo ldconfig
+```
+
+- 软链接错误，需要创建软链接
+```
+sudo ldconfig
+/sbin/ldconfig.real: /usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn.so.8 不是符号连接
+/sbin/ldconfig.real: /usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_adv_infer.so.8 不是符号连接
+/sbin/ldconfig.real: /usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_adv_train.so.8 不是符号连接
+/sbin/ldconfig.real: /usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_cnn_train.so.8 不是符号连接
+/sbin/ldconfig.real: /usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_ops_train.so.8 不是符号连接
+/sbin/ldconfig.real: /usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_ops_infer.so.8 不是符号连接
+/sbin/ldconfig.real: /usr/local/cuda-11.0/targets/x86_64-linux/lib/libcudnn_cnn_infer.so.8 不是符号连接
+```
+
+2. 报错`/usr/bin/ld: warning: libopenjp2.so.7, needed by /usr/local/lib/libopencv_imgcodecs.so.4.5.5, not found (try using -rpath or -rpath-link)`
+
+- 安装依赖
+```
+sudo apt-get update
+sudo apt-get install libopenjp2-7
+```
+3. np.bool报错
+- 在numpy1.20版本之后，修改为np.bool_
