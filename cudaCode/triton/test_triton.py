@@ -7,7 +7,7 @@ import triton.language as tl
 Demo for triton.
 """
 
-DEVICE = triton.runtime.driver.active.get_active_torch_device()
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
 @triton.jit
 def add_kernel(
@@ -19,13 +19,20 @@ def add_kernel(
 ):
     """
     核函数
+
+    Args:
+        x_ptr: 输入张量的指针
+        y_ptr: 输入张量的指针
+        otuput_ptr: 输出张量的指针
+        n_elements: 元素总数
+        block_size: 每个block处理的元素数量
     """
-    pid = tl.program_id(axis=0)
-    block_start = pid * block_size
-    offsets = block_start + tl.arange(0, block_size)
-    mask = offsets < n_elements
+    pid = tl.program_id(axis=0) # 当前block的id
+    block_start = pid * block_size # 当前block处理的起始索引
+    offsets = block_start + tl.arange(0, block_size) # 当前block负责的所有索引
+    mask = offsets < n_elements # 防止越界, 最后一个block可能不满
     x = tl.load(x_ptr + offsets, mask=mask)
-    y = tl.load(x_ptr + offsets, mask=mask)
+    y = tl.load(y_ptr + offsets, mask=mask)
     output = x + y
     tl.store(output_ptr + offsets, output, mask=mask)
 
@@ -38,10 +45,10 @@ def add(
     """
     output = torch.empty_like(x)
     assert x.is_cuda and y.is_cuda and output.is_cuda
-    n_elements = output.numel()
-    grid = lambda meta: (triton.cdiv(n_elements, meta['block_size']), )
+    n_elements = output.numel() # 计算总元素数量
+    grid = lambda meta: (triton.cdiv(n_elements, meta['block_size']), ) # 决定kernel启动多少个block
 
-    add_kernel[grid](x, y, output, n_elements, BLOCK_SIZE=1024)
+    add_kernel[grid](x, y, output, n_elements, block_size=1024)
 
     return output
     
