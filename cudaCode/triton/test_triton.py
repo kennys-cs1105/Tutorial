@@ -5,6 +5,7 @@ import triton.language as tl
 
 """
 Demo for triton.
+1. vector add
 """
 
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
