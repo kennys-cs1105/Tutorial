@@ -1,0 +1,3 @@
+# ninja log v5
+0	18007	1759048861516609368	/home/kennys/workspace/minex/Tutorial/LLM/torch-extension/build/temp.linux-x86_64-cpython-310/src/pybind.o	132b3481ccc98cf1
+0	38263	1759048881778581022	/home/kennys/workspace/minex/Tutorial/LLM/torch-extension/build/temp.linux-x86_64-cpython-310/src/add_kernel.o	a160c1ad491dfa0f
