@@ -58,6 +58,59 @@ class SelfAttnV1(nn.Module):
         return output
         
 
+# Version 2. 优化效率
+# QKV矩阵计算时, 可以合并成一个大矩阵进行运算
+class SelfAttnV2(nn.Module):
+    def __init__(self, hidden_dim) -> None:
+        super().__init__()
+        self.hidden_dim = hidden_dim
+        # 一般linear都是默认有bias的
+        self.proj = nn.Linear(hidden_dim, hidden_dim * 3)
+        self.output_proj = nn.Linear(hidden_dim, hidden_dim)
+
+    def forward(self, x):
+        # x: [batch, seq, hidden_dim]
+        QKV = self.proj(x)
+        Q, K, V = torch.split(QKV, self.hidden_dim, dim=-1)
+        attention_weight = torch.softmax(
+            Q @ K.transpose(-1,-2) / math.sqrt(self.hidden_dim), dim=-1
+        )
+        output = attention_weight @ V
+
+        return self.output_proj(output)
+    
+
+# Version 3. 加入细节
+# attention计算时有dropout, 比较奇怪的位置
+# attention计算时一般会加入attention_mask, 因为一些样本会进行padding
+# MHSA过程中, 除了QKV, 还有一个output对应的投影矩阵
+class SelfAttnV3(nn.Module):
+    def __init__(self, hidden_dim) -> None:
+        super().__init__()
+        self.hidden_dim = hidden_dim
+        # 一般linear都是默认有bias的
+        self.proj = nn.Linear(hidden_dim, hidden_dim * 3)
+        self.output_proj = nn.Linear(hidden_dim, hidden_dim)
+        self.dropout = nn.Dropout(0.1)
+
+    def forward(self, x, attention_mask=None):
+        # x: [batch, seq, hidden_dim]
+        QKV = self.proj(x)
+        Q, K, V = torch.split(QKV, self.hidden_dim, dim=-1)
+        attention_weight = torch.softmax(
+            Q @ K.transpose(-1, -2) / math.sqrt(self.hidden_dim), dim=-1
+        )
+
+        if attention_mask is not None:
+            attention_weight = attention_weight.masked_fill(attention_mask == 0, float("-1e20"))
+        
+        attention_weight = torch.softmax(attention_mask, dim=-1)
+        attention_weight = self.dropout(attention_weight)
+        output = attention_weight @ V
+        
+        return self.output_proj(output)
+
+
 if __name__ == "__main__":
     attn = SelfAttnV1(4)
     x = torch.randn(3, 2, 4)
