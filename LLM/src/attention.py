@@ -107,8 +107,57 @@ class SelfAttnV3(nn.Module):
         attention_weight = torch.softmax(attention_mask, dim=-1)
         attention_weight = self.dropout(attention_weight)
         output = attention_weight @ V
-        
+
         return self.output_proj(output)
+
+
+# Version 4. Multi Head Self Attention
+class MultiHeadAttention(nn.Module):
+    def __init__(self, hidden_num, num_head) -> None:
+        super().__init__()
+
+        self.num_head = num_head
+        self.head_dim = hidden_num // num_head
+        self.hidden_num = hidden_num
+
+        self.q_proj = nn.Linear(hidden_num, hidden_num)
+        self.k_proj = nn.Linear(hidden_num, hidden_num)
+        self.v_proj = nn.Linear(hidden_num, hidden_num)
+        self.output_proj = nn.Linear(hidden_num, hidden_num)
+        self.dropout = nn.Dropout(0.1)
+
+    def forward(self, x, attention_mask=None):
+        # x: [batch_size, seq, hidden_dim]
+        batch_size, seq_len, _ = x.size()
+
+        Q = self.q_proj(x)
+        K = self.k_proj(x)
+        V = self.v_proj(x)
+
+        # shape变成 [batch_size, num_head, seq_len, head_dim]
+        q_state = Q.view(batch_size, seq_len, self.num_head, self.head_dim).permute(0,2,1,3)
+        k_state = K.view(batch_size, seq_len, self.num_head, self.head_dim).permute(1,2)
+        v_state = V.view(batch_size, seq_len, self.num_head, self.head_dim).permute(1,2)
+
+        attention_weight = torch.softmax(
+            q_state @ k_state.transpose(-1,-2) / math.sqrt(self.head_dim)
+        )
+        if attention_mask is not None:
+            attention_weight = attention_weight.masked_fill(attention_mask == 0, float("-1e20"))
+        
+        attention_weight = torch.softmax(attention_weight, dim=3)
+        attention_weight = self.dropout(attention_weight)
+
+        output_mid  =attention_weight @ v_state
+        # 重新变成[batch_size, seq_len, num_head, head_dim]
+        # contiguous返回一个连续内存的tensor, view只能在连续内存中操作
+        output_mid = output_mid.transpose(1,2).contiguous()
+        # 变成[batch_size, seq_len, hidden_num]
+        output = output_mid.view(batch_size, seq_len, -1)
+        output = self.output_proj(output)
+
+        return output
+
 
 
 if __name__ == "__main__":
