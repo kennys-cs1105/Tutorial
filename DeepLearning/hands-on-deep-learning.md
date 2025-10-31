@@ -148,3 +148,80 @@ source ~/.bashrc
 from transformers import AutoModel
 model = AutoModel.from_pretrained("bert-base-uncased")
 ```
+
+## clash安装与配置
+
+### 使用客户端
+
+[clash-verge-rev](https://github.com/clash-verge-rev/clash-verge-rev)
+
+1. 选择对应操作系统的安装包进行安装
+2. 获取clash配置文件导入并开启全局代理
+
+### 在linux服务器端配置clash
+
+1. 下载clash核心
+
+```
+cd /tmp
+wget https://github.com/MetaCubeX/mihomo/releases/latest/download/mihomo-linux-amd64-v1.18.3.gz
+gunzip mihomo-linux-amd64-v1.18.3.gz
+sudo mv mihomo-linux-amd64-v1.18.3 /usr/local/bin/mihomo
+sudo chmod +x /usr/local/bin/mihomo
+```
+
+2. 配置文件
+
+```
+mkdir -p ~/.config/clash
+cd ~/.config/clash
+
+wget -O config.yaml "https://你的新订阅链接"
+```
+
+3. 通过这种配置文件的方式可能会因为dns端口问题导致无法正常使用, 这里选择在clash桌面端生成的`config.yaml`复制到该路径下
+
+4. 启动clash
+
+临时启动
+
+```
+clash-meta -d ~/.config/clash
+# 或
+mihomo -d ~/.config/clash
+
+# 后台运行
+nohup clash-meta -d ~/.config/clash > clash.log 2>&1 &
+# 或
+nohup mihomo -d ~/.config/clash > clash.log 2>&1 &
+```
+
+设置systemd服务
+
+```
+sudo nano /etc/systemd/system/clash.service
+```
+
+添加内容
+
+```
+[Unit]
+Description=Clash Proxy Service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/clash-meta -d /home/你的用户名/.config/clash
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+```
+
+启用
+
+```
+sudo systemctl daemon-reload
+sudo systemctl enable clash
+sudo systemctl start clash
+```
