@@ -171,15 +171,40 @@ IdentityFile ~/.ssh/id_rsa
     - `docker stop <container_id_or_name>`
   
 
-## Hugging Face
+## Huggingface代理问题
 
-### HF下载超时问题
+在国内环境下，Hugging Face(hf.co)访问速度超时，因此需要通过国内镜像或者加速代理的方式进行下载数据集或者模型
 
-1. 下载huggingface数据集超时问题, 导入镜像环境`export HF_ENDPOINT="https://hf-mirror.com"`
+### 使用场景
 
-2. 无法访问huggingface.co
+1. 下载数据集：`https://huggingface.co/<repo>/resolve/...`
+2. 下载模型：`https://huggingface.co/datasets/...`
+3. 空间spaces：一般对应在线demo，不涉及下载
 
-**问题**：OSError: We couldn't connect to 'https://huggingface.co' to load this file, couldn't find it in the cached files and it looks like bert-base-chinese is not the path to a directory containing a file named config.json. Checkout your internet connection or see how to run the library in offline mode at 'https://huggingface.co/docs/transformers/installation#offline-mode'.： 
+### 推荐使用国内镜像
 
-**解决**：在导入transformers前`import os
-os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"`
+1. 清华大学镜像：`https://hf-mirror.com`
+
+2. 命令行替换
+
+- 直接替换URL中的`https://huggingface.co`为`https://hf-mirror.com`
+- 例如：`https://huggingface.co/datasets/...` 替换为 `https://hf-mirror.com/datasets/...`
+
+3. 设置环境变量
+
+- `export HF_ENDPOINT=https://hf-mirror.com`
+
+或者写入环境变量
+
+```
+echo 'export HF_ENDPOINT=https://hf-mirror.com' >> ~/.bashrc
+source ~/.bashrc
+```
+
+然后在代码中调用
+
+```
+from transformers import AutoModel
+model = AutoModel.from_pretrained("bert-base-uncased")
+```
+
