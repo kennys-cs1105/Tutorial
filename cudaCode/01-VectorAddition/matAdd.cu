@@ -12,17 +12,20 @@ __global__ void vecAddKernel(const float* A, const float* B, float* C, int M, in
 {
     int row = blockIdx.y * blockDim.y + threadIdx.y; // 全局线程索引
     int col = blockIdx.x * blockDim.x + threadIdx.x; // 全局线程索引
-    if (row < M && col < N) // 边界检查 防止数组越界
-    {
+    if (row < M && col < N){
         int idx = row * N + col;
-        C[idx] = A[idx] + B[idx]; // 逐元素相加
+        C[idx] = A[idx] + B[idx];
     }
 }
 
 
 void matAdd(float *A, float *B, float *C, int M, int N) {
-    dim3 threadPerBlock(BLOCK_SIZE, BLOCK_SIZE);  // 修正为 dim3 构造函数
-    dim3 blockPerGrid(CEIL(N, BLOCK_SIZE), CEIL(M, BLOCK_SIZE));
+    dim3 threadPerBlock(BLOCK_SIZE, BLOCK_SIZE);  // 每个线程块的大小 例如32*32
+    // 计算列 行方向需要多少线程块
+    // 例如 M=500 N=1000 BLOCK_SIZE=32
+    // 需要 16 个线程块 (500/32) 行方向   需要 32 个线程块 (1000/32) 列方向
+    // blockPerGrid计算为(32,16) 可覆盖所有矩阵元素
+    dim3 blockPerGrid(CEIL(N, BLOCK_SIZE), CEIL(M, BLOCK_SIZE)); // 基于向上取整除法 确保所有元素都被处理
     vecAddKernel<<<blockPerGrid, threadPerBlock>>>(A, B, C, M, N);
     cudaDeviceSynchronize();
 }
@@ -34,27 +37,27 @@ void test_MatAdd() {
     const int N = 5;
     const int total = M * N;
 
-    // 初始化主机数据
+    // CPU上初始化数据
     float h_A[total], h_B[total], h_C_gpu[total], h_C_cpu[total];
     for (int i = 0; i < total; i++) {
         h_A[i] = i + 1.0f;       // A = [[1,2,3,4,5], [6,7,8,9,10], [11,12,13,14,15]]
         h_B[i] = i * 0.1f;       // B = [[0.0,0.1,0.2,0.3,0.4], [0.5,0.6,...], ...]
     }
 
-    // 分配设备内存
+    // 分配GPU内存
     float *d_A, *d_B, *d_C;
     cudaMalloc(&d_A, total * sizeof(float));
     cudaMalloc(&d_B, total * sizeof(float));
     cudaMalloc(&d_C, total * sizeof(float));
 
-    // 拷贝数据到设备
+    // 拷贝数据到GPU
     cudaMemcpy(d_A, h_A, total * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_B, h_B, total * sizeof(float), cudaMemcpyHostToDevice);
 
     // 执行 GPU 计算
     matAdd(d_A, d_B, d_C, M, N);
 
-    // 拷贝结果回主机
+    // 拷贝结果回CPU
     cudaMemcpy(h_C_gpu, d_C, total * sizeof(float), cudaMemcpyDeviceToHost);
 
     // CPU 计算参考结果
@@ -83,7 +86,7 @@ void test_MatAdd() {
     bool pass = true;
     const float eps = 1e-5;
     for (int i = 0; i < total; i++) {
-        if (fabs(h_C_gpu[i] - h_C_cpu[i]) > eps) {
+        if (fabs(h_C_gpu[i] - h_C_cpu[i]) > eps) { // fabs是C标准库中的绝对值函数 用于计算浮点数的绝对值
             pass = false;
             printf("Error at index %d: GPU=%.2f, CPU=%.2f\n", i, h_C_gpu[i], h_C_cpu[i]);
             break;
