@@ -134,20 +134,41 @@ IdentityFile ~/.ssh/id_rsa
 
 ### Docker安装
 
-1. 假设已经安装好docker了
+1. Docker Desktop支持win/mac/linux，nvidia容器工具包仅支持linux(debian/ubuntu + nvidia显卡)
 
-### Nvidia Docker安装
+2. 基础docker安装，下载Docker Desktop
 
-1. Ubuntu上安装
+安装Docker基础组件
 
-  ```bash
-  distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
-  && curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add - \
-  && curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
-  sudo apt-get update
-  sudo apt-get install -y nvidia-docker2
-  sudo systemctl restart docker
-  ```
+```
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+```
+
+验证Docker安装
+
+```
+docker --verison
+```
+
+
+3. nvidia容器工具包安装(linux + nvidia显卡)
+
+核心是让 Docker 容器能调用主机 NVIDIA 显卡
+
+```
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add -
+curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+sudo apt-get update && sudo apt-get install -y nvidia-container-toolkit
+sudo systemctl restart docker
+```
+
+验证GPU支持
+
+```
+docker run --rm --gpus all nvidia/cuda:12.1.0-base-ubuntu22.04 nvidia-smi
+```
 
 ### 使用流
 
